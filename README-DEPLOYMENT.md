@@ -93,6 +93,37 @@ Container-Austausch bereits begonnen hat (`container_swapped`), und ruft `rollba
 noch auf, wenn das der Fall ist. Schlägt Backup/Pull vorher fehl, läuft die App unverändert
 weiter und es wird lediglich `fehlgeschlagen` gemeldet.
 
+## Release auf die Website hochladen (version.json)
+
+Nach Freigabe einer neuen Version wird `version.json` per FTPS (verschlüsselt) auf den
+Webserver hochgeladen, damit Kunden-Instanzen sie unter
+`https://www.weidlinger-soft.at/apps/ws-verlag/version.json` finden (siehe
+`docs/update-manifest-format.md` für das Format).
+
+```bash
+# 1. Version hochzaehlen, Image bauen/pushen, Digest ermitteln (siehe Release-Ablauf
+#    in docs/update-manifest-format.md), dann:
+# 2. deploy/release_upload/version.json mit den neuen Werten aktualisieren
+# 3. Hochladen:
+poetry run python deploy/deploy_release.py
+```
+
+Voraussetzung: `deploy/.env.deploy` mit den FTP-Zugangsdaten (Vorlage:
+`deploy/.env.deploy.example`). Diese Datei ist per `.gitignore` ausgeschlossen und
+**darf niemals committet werden** — sie enthält Klartext-Zugangsdaten für den
+Webserver-FTP-Account.
+
+Details zum Skript:
+
+- Verwendet ausschließlich **FTPS** (FTP over TLS), kein Klartext-FTP — sowohl Login als
+  auch der Datenkanal (`prot_p()`) sind verschlüsselt.
+- Lädt ausschließlich den Inhalt von `deploy/release_upload/` hoch, niemals das
+  Repository selbst.
+- **Wichtig zum FTP-Zielpfad:** Das FTP-Basisverzeichnis dieses Accounts ist nicht `/`
+  im Sinne des Webroots — der korrekte Zielpfad ist `weidlinger-soft/apps/ws-verlag`
+  (nicht `/apps/ws-verlag`), siehe `FTP_REMOTE_DIR` in `deploy/.env.deploy.example`.
+  Am 2026-08-30 mit einem inhaltsgleichen Testupload gegen den echten Server verifiziert.
+
 ## Bekannte Grenzen
 
 - Datenbankschema-Änderungen zwischen Versionen werden aktuell nur additiv über

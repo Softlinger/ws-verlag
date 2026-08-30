@@ -44,7 +44,35 @@ header.app-header {
   justify-content: space-between;
 }
 header.app-header a { color: var(--color-primary-contrast); text-decoration: none; }
-header.app-header nav ul { list-style: none; display: flex; gap: 1.25rem; margin: 0; padding: 0; flex-wrap: wrap; }
+header.app-header nav ul { list-style: none; display: flex; gap: 1.25rem; margin: 0; padding: 0; flex-wrap: wrap; align-items: center; }
+
+.version-tag { font-size: 0.8rem; opacity: 0.8; margin-left: 0.35rem; }
+
+.help-menu { position: relative; }
+.help-menu summary {
+  cursor: pointer;
+  list-style: none;
+}
+.help-menu summary::-webkit-details-marker { display: none; }
+.help-menu[open] summary { text-decoration: underline; }
+.help-menu ul {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 0.5rem 0;
+  min-width: 10rem;
+  z-index: 50;
+  display: block;
+  flex-direction: column;
+  gap: 0;
+}
+.help-menu ul li { display: block; }
+.help-menu ul a { color: var(--color-text); display: block; padding: 0.4rem 1rem; }
+.help-menu ul a:hover, .help-menu ul a:focus { background: var(--color-bg); }
 
 main { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
 

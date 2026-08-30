@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Hilfe - WS-Verlag Verwaltung{% endblock %}
+{% block content %}
+<h1>Hilfe</h1>
+
+<nav aria-label="Hilfe-Bereiche" class="card">
+  <ul>
+    <li><a href="#handbuch">Handbuch</a></li>
+    <li><a href="#ueber">&Uuml;ber diese Software</a></li>
+    <li><a href="#kontakt">Kontakt</a></li>
+  </ul>
+</nav>
+
+<section id="handbuch" class="card" aria-labelledby="handbuch-heading">
+  <h2 id="handbuch-heading">Handbuch</h2>
+
+  <h3>Kunden</h3>
+  <p>Unter „Kunden“ werden Stammdaten verwaltet: Adresse, Zahlungsbedingung, Bankkonto.
+     Ein Kunde gilt automatisch als <strong>Reverse-Charge</strong>-Kunde, sobald „Ausl&auml;ndischer
+     EU-Kunde“ angehakt und eine UID-Nummer hinterlegt ist — auf Rechnungen entf&auml;llt dann die USt.</p>
+
+  <h3>Artikel</h3>
+  <p>Artikel haben einen Nettopreis und einen MwSt.-Satz (10% oder 20%). Bei der Auswahl eines
+     Artikels in einer Auftrags- oder Rechnungsposition werden Bezeichnung, Preis und MwSt.-Satz
+     automatisch &uuml;bernommen und k&ouml;nnen danach noch angepasst werden.</p>
+
+  <h3>Auftr&auml;ge</h3>
+  <p>Ein Auftrag erh&auml;lt automatisch eine fortlaufende Nummer. Aus der Auftrags-Detailseite
+     heraus k&ouml;nnen Sie die Auftragsbest&auml;tigung als PDF ansehen, per E-Mail versenden,
+     den Auftrag &auml;ndern oder l&ouml;schen (l&ouml;schen nur solange keine Rechnung dazu
+     existiert) sowie direkt eine Rechnung aus dem Auftrag erstellen.</p>
+
+  <h3>Rechnungen</h3>
+  <p>Rechnungen k&ouml;nnen direkt oder aus einem Auftrag erstellt werden. F&auml;lligkeit ergibt
+     sich aus der Zahlungsbedingung des Kunden. Auf der Detailseite: PDF ansehen, per E-Mail
+     versenden, Zahlungen erfassen (Status wechselt automatisch zwischen offen/teilbezahlt/bezahlt)
+     sowie bei Bedarf eine Gutschrift oder Mahnung erstellen.</p>
+
+  <h3>Werbesteuer</h3>
+  <p>Wird pro Rechnung pauschal zugeordnet und erh&ouml;ht die Bemessungsgrundlage der USt.:
+     <em>Netto + 5% Werbesteuer = Zwischensumme, darauf die USt. (10%/20%) = Gesamtbetrag.</em></p>
+
+  <h3>Gutschriften</h3>
+  <p>Eigener Belegtyp mit eigenem Nummernkreis, verweist immer auf die urspr&uuml;ngliche Rechnung.</p>
+
+  <h3>Mahnwesen</h3>
+  <p>Unter „Mahnwesen“ werden &uuml;berf&auml;llige, noch nicht vollst&auml;ndig bezahlte Rechnungen
+     angezeigt. Mahnungen (Stufe 1–3) werden manuell je Rechnung ausgel&ouml;st; Fristen, Geb&uuml;hren
+     und Textvorlagen je Stufe sind unter „Firma“ konfigurierbar.</p>
+
+  <h3>Firma (nur Admin)</h3>
+  <p>Firmenstammdaten, Bankkonten, SMTP-Server f&uuml;r den Belegversand, Zahlungsbedingungen,
+     Belegnummernkreise (Pr&auml;fix/Suffix/Startnummer je Belegtyp) und Mahnstufen-Konfiguration.</p>
+
+  <h3>Benutzer (nur Admin)</h3>
+  <p>Anlegen und Deaktivieren von Benutzerkonten mit Rolle Admin oder Sachbearbeiter.</p>
+
+  <h3>Updates (nur Admin)</h3>
+  <p>Zeigt an, wenn eine neuere Version verf&uuml;gbar ist, und fragt vor jeder Installation
+     ausdr&uuml;cklich nach Best&auml;tigung. Vor der Installation wird automatisch ein Backup
+     angelegt; schl&auml;gt die Installation fehl, wird automatisch auf die vorherige Version
+     zur&uuml;ckgesetzt.</p>
+</section>
+
+<section id="ueber" class="card" aria-labelledby="ueber-heading">
+  <h2 id="ueber-heading">&Uuml;ber diese Software</h2>
+  <p><strong>WS-Verlag Verwaltung</strong>, Version {{ app_version }}.</p>
+  <p>Individualsoftware f&uuml;r Kunden-, Artikel-, Auftrags- und Rechnungsmanagement,
+     Buchhaltung sowie Zahlungs- und Mahnungsmanagement eines Verlagskunden — entwickelt
+     nach &ouml;sterreichischem/EU-Recht (u. a. Reverse-Charge-Verfahren, Werbesteuer).</p>
+  <p>Entwickelt von Weidlinger-Soft.</p>
+</section>
+
+<section id="kontakt" class="card" aria-labelledby="kontakt-heading">
+  <h2 id="kontakt-heading">Kontakt</h2>
+  <address>
+    Weidlinger-Soft<br>
+    Dorfstra&szlig;e 8<br>
+    6262 Schlitters<br>
+    &Ouml;sterreich<br>
+    Telefon: <a href="tel:+43528872662">+43 5288 72662</a><br>
+    E-Mail: <a href="mailto:shop@weidlinger-soft.com">shop@weidlinger-soft.com</a><br>
+    Web: <a href="https://www.weidlinger-soft.at" target="_blank" rel="noopener">weidlinger-soft.at</a>
+  </address>
+</section>
+{% endblock %}

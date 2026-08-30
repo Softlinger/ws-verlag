@@ -71,16 +71,14 @@ def render_invoice_pdf(*, company: Company, invoice, customer, items, totals) ->
     elements.append(Spacer(1, 6 * mm))
 
     summary_rows = [["Nettosumme", f"{totals.net_total:.2f} EUR"]]
+    if invoice.advertising_tax_applicable:
+        summary_rows.append([f"Werbesteuer {invoice.advertising_tax_rate}%", f"{totals.advertising_tax_amount:.2f} EUR"])
+        summary_rows.append(["Zwischensumme", f"{totals.subtotal:.2f} EUR"])
     if invoice.reverse_charge:
         summary_rows.append(["USt", "Reverse-Charge-Verfahren, Steuerschuld beim Leistungsempfaenger"])
     else:
         for rate, amount in totals.vat_breakdown.items():
-            if rate == "werbesteuer":
-                continue
             summary_rows.append([f"USt {rate}%", f"{amount:.2f} EUR"])
-    if invoice.advertising_tax_applicable:
-        werbesteuer = totals.vat_breakdown.get("werbesteuer", Decimal("0.00"))
-        summary_rows.append([f"Werbesteuer {invoice.advertising_tax_rate}%", f"{werbesteuer:.2f} EUR"])
     summary_rows.append(["Gesamtbetrag", f"{totals.gross_total:.2f} EUR"])
 
     summary_table = Table(summary_rows, colWidths=[100 * mm, 50 * mm])

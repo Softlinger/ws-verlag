@@ -22,15 +22,16 @@
   </table>
 
   <p>Nettosumme: {{ "%.2f"|format(totals.net_total) }} EUR</p>
+  {% if invoice.advertising_tax_applicable %}
+  <p>Werbesteuer {{ invoice.advertising_tax_rate }}%: {{ "%.2f"|format(totals.advertising_tax_amount) }} EUR</p>
+  <p>Zwischensumme: {{ "%.2f"|format(totals.subtotal) }} EUR</p>
+  {% endif %}
   {% if invoice.reverse_charge %}
   <p>USt: Reverse-Charge-Verfahren, Steuerschuld beim Leistungsempf&auml;nger</p>
   {% else %}
   {% for rate, amount in totals.vat_breakdown.items() %}
-  {% if rate != "werbesteuer" %}<p>USt {{ rate }}%: {{ "%.2f"|format(amount) }} EUR</p>{% endif %}
+  <p>USt {{ rate }}%: {{ "%.2f"|format(amount) }} EUR</p>
   {% endfor %}
-  {% endif %}
-  {% if invoice.advertising_tax_applicable %}
-  <p>Werbesteuer {{ invoice.advertising_tax_rate }}%: {{ "%.2f"|format(totals.vat_breakdown.get("werbesteuer", 0)) }} EUR</p>
   {% endif %}
   <p><strong>Gesamtbetrag: {{ "%.2f"|format(totals.gross_total) }} EUR</strong></p>
   <p>Bereits bezahlt: {{ "%.2f"|format(paid_total) }} EUR &mdash; Offen: {{ "%.2f"|format(open_amount) }} EUR</p>

@@ -2,8 +2,13 @@
 {% block title %}Auftrag {{ order.number }} - WS-Verlag Verwaltung{% endblock %}
 {% block content %}
 <h1>Auftrag {{ order.number }}</h1>
+
+{% if error == "has_invoices" %}
+<p class="error-message" role="alert">Dieser Auftrag kann nicht gel&ouml;scht werden, da bereits eine Rechnung dazu existiert.</p>
+{% endif %}
+
 <div class="card">
-  <p>Kunde: <strong>{{ order.customer.name }}</strong></p>
+  <p>Kunde: <strong>{{ order.customer.name }}</strong>{% if order.customer.reverse_charge_applicable %} <em>(Reverse-Charge)</em>{% endif %}</p>
   <p>Datum: {{ order.order_date.strftime('%d.%m.%Y') }}</p>
   {% if order.note %}<p>Notiz: {{ order.note }}</p>{% endif %}
   <table>
@@ -20,6 +25,32 @@
       {% endfor %}
     </tbody>
   </table>
-  <p><a class="btn" href="/invoices/new?order_id={{ order.id }}">Rechnung aus Auftrag erstellen</a></p>
+
+  <p>Nettosumme: {{ "%.2f"|format(totals.net_total) }} EUR</p>
+  {% if order.advertising_tax_applicable %}
+  <p>Werbesteuer: {{ "%.2f"|format(totals.advertising_tax_amount) }} EUR</p>
+  <p>Zwischensumme: {{ "%.2f"|format(totals.subtotal) }} EUR</p>
+  {% endif %}
+  {% if order.customer.reverse_charge_applicable %}
+  <p>USt: Reverse-Charge-Verfahren, Steuerschuld beim Leistungsempf&auml;nger</p>
+  {% else %}
+  {% for rate, amount in totals.vat_breakdown.items() %}
+  <p>USt {{ rate }}%: {{ "%.2f"|format(amount) }} EUR</p>
+  {% endfor %}
+  {% endif %}
+  <p><strong>Gesamtbetrag: {{ "%.2f"|format(totals.gross_total) }} EUR</strong></p>
+
+  <p>
+    <a class="btn" href="/orders/{{ order.id }}/pdf" target="_blank">PDF ansehen</a>
+    <form style="display:inline" method="post" action="/orders/{{ order.id }}/send">
+      <button type="submit" class="secondary">Per E-Mail senden</button>
+    </form>
+    <a class="btn secondary" href="/orders/{{ order.id }}/edit">&Auml;ndern</a>
+    <a class="btn" href="/invoices/new?order_id={{ order.id }}">Rechnung aus Auftrag erstellen</a>
+  </p>
+  <form method="post" action="/orders/{{ order.id }}/delete" onsubmit="return confirm('Auftrag {{ order.number }} wirklich löschen?');">
+    <button type="submit" class="danger" {{ "disabled" if has_invoices else "" }}>L&ouml;schen</button>
+    {% if has_invoices %}<span> (nicht m&ouml;glich - Rechnung vorhanden)</span>{% endif %}
+  </form>
 </div>
 {% endblock %}

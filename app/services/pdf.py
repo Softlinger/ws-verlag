@@ -99,6 +99,70 @@ def render_invoice_pdf(*, company: Company, invoice, customer, items, totals) ->
     return buffer.getvalue()
 
 
+def render_order_pdf(*, company: Company, order, customer, items, totals) -> bytes:
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    elements = _company_header(company)
+
+    elements.append(Paragraph(f"<b>AUFTRAGSBEST&Auml;TIGUNG {order.number}</b>", styles["Heading1"]))
+    elements.append(Paragraph(f"Auftragsdatum: {order.order_date.strftime('%d.%m.%Y')}", styles["Normal"]))
+    elements.append(Spacer(1, 4 * mm))
+    elements.append(Paragraph(f"<b>{customer.name}</b>", styles["Normal"]))
+    elements.append(Paragraph(f"{customer.street}, {customer.postal_code} {customer.city}", styles["Normal"]))
+    if customer.uid_number:
+        elements.append(Paragraph(f"UID: {customer.uid_number}", styles["Normal"]))
+    elements.append(Spacer(1, 6 * mm))
+
+    reverse_charge = customer.reverse_charge_applicable
+    table_data = [["Bezeichnung", "Menge", "Einzelpreis", "USt%", "Gesamt"]]
+    for item in items:
+        table_data.append(
+            [
+                item.description,
+                str(item.quantity),
+                f"{item.unit_price:.2f}",
+                "RC" if reverse_charge else f"{item.vat_rate}%",
+                f"{item.net_total:.2f}",
+            ]
+        )
+    table = Table(table_data, colWidths=[70 * mm, 20 * mm, 30 * mm, 20 * mm, 30 * mm])
+    table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2f3e46")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTSIZE", (0, 0), (-1, -1), 9),
+                ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+                ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
+            ]
+        )
+    )
+    elements.append(table)
+    elements.append(Spacer(1, 6 * mm))
+
+    summary_rows = [["Nettosumme", f"{totals.net_total:.2f} EUR"]]
+    if order.advertising_tax_applicable:
+        summary_rows.append([f"Werbesteuer {company.advertising_tax_rate}%", f"{totals.advertising_tax_amount:.2f} EUR"])
+        summary_rows.append(["Zwischensumme", f"{totals.subtotal:.2f} EUR"])
+    if reverse_charge:
+        summary_rows.append(["USt", "Reverse-Charge-Verfahren, Steuerschuld beim Leistungsempfaenger"])
+    else:
+        for rate, amount in totals.vat_breakdown.items():
+            summary_rows.append([f"USt {rate}%", f"{amount:.2f} EUR"])
+    summary_rows.append(["Gesamtbetrag", f"{totals.gross_total:.2f} EUR"])
+
+    summary_table = Table(summary_rows, colWidths=[100 * mm, 50 * mm])
+    summary_table.setStyle(TableStyle([("FONTSIZE", (0, 0), (-1, -1), 9), ("ALIGN", (1, 0), (-1, -1), "RIGHT")]))
+    elements.append(summary_table)
+
+    if order.note:
+        elements.append(Spacer(1, 6 * mm))
+        elements.append(Paragraph(f"Notiz: {order.note}", styles["Normal"]))
+
+    doc.build(elements)
+    return buffer.getvalue()
+
+
 def render_credit_note_pdf(*, company: Company, credit_note, customer, items, totals) -> bytes:
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)

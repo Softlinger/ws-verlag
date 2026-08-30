@@ -3,6 +3,23 @@
 {% block content %}
 <h1>Firmenstammdaten</h1>
 
+{% if request.query_params.get("error") == "logo_type" %}
+<p class="error-message" role="alert">Ung&uuml;ltiges Dateiformat - bitte eine JPG-Datei hochladen.</p>
+{% endif %}
+
+<div class="card">
+  <h2>Firmenlogo</h2>
+  <p>Wird auf Auftrag/Rechnung/Gutschrift oben rechts gedruckt (90&times;50&nbsp;mm), als JPG.</p>
+  {% if company.logo_path %}
+  <p><img src="/static/{{ company.logo_path }}" alt="Aktuelles Firmenlogo" style="max-width: 270px; max-height: 150px;"></p>
+  {% endif %}
+  <form method="post" action="/company/logo" enctype="multipart/form-data">
+    <label for="logo">Logo-Datei (JPG)</label>
+    <input id="logo" name="logo" type="file" accept=".jpg,.jpeg" required>
+    <p><button type="submit" style="margin-top: 1rem;">Hochladen</button></p>
+  </form>
+</div>
+
 <div class="card">
   <h2>Allgemein & SMTP</h2>
   <form method="post" action="/company/update">
@@ -106,6 +123,8 @@
     <input id="days_due" name="days_due" type="number" value="14">
     <label for="pt_description">Beschreibung</label>
     <input id="pt_description" name="description">
+    <label for="printed_text">Text auf Beleg (Auftrag/Rechnung/Gutschrift)</label>
+    <input id="printed_text" name="printed_text" value="Zahlbar nach Erhalt, ohne Abzug.">
     <label for="pt_is_default">
       <input id="pt_is_default" name="is_default" type="checkbox" style="width:auto; display:inline-block;">
       Standard

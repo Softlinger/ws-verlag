@@ -1,0 +1,35 @@
+
+Layout Beschreibung für Belege Din A4
+
+FirmenLogo Jpg  breite 90mm  höhe 50mm; muß noch in Firmenstammdaten eingepflegt werden.
+Position Logo: 110 mm vom rechten rand, 35 mm vom oberen Rand entfernt
+
+Kundenanschrift:
+    Name
+    Strasse
+    Zusatzstrasse (Fehlt noch in der DB)
+    PLZ Ort
+    Land
+    
+    UID NR
+    
+Position Kundenanschrift: 23 mm vom rechten rand, 58 mm vom oberen rand, schriftgröße 14, Fett 
+
+Rechnungsdatum:  160 mm vom rechten rand, 128 mm vom oberen rand, schriftgröße 12    
+
+Belegname und Belegnr: 23 mm vom rechten Rand, 155 mm von oberen rand, schriftgröße 16, Fett
+
+Positionen: 23 mm vom rechten Rand, 175 mm von oberen rand, schriftgröße 16, Fett
+keine Spalten überschriften
+Unter den Positionen eine Linie
+Steuer Zeilen, schriftgröße 14
+Unter den Steuer Zeilen eine Linie
+Gesamtbetrag  summe, schriftgröße 16, Fett
+
+Reverse-charge Text: zentriert, 243 mm vom oberen rand, schriftgröße 14, Fett 
+genauer Textwortlaut: "Ausländische Dienstleistung daher MwSt. frei.
+"Die Leistung unterliegt dem Reverse-Charge-System gem. § 19 Abs. 1 USTG 1994""
+
+Zahlungsbedingungen: zentriert , 253 mm vom oberen rand, schriftgröße 14, Fett 
+
+Bankverbindung: 23 mm vom rechten rand, 273 mm vom oberen rand, schriftgröße 10 

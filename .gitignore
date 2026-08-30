@@ -12,3 +12,4 @@ build/
 backups/
 update-signal/
 deploy/.env.deploy
+app/static/uploads/

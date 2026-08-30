@@ -10,6 +10,9 @@
     <label for="street">Stra&szlig;e</label>
     <input id="street" name="street" value="{{ customer.street if customer else '' }}">
 
+    <label for="street2">Adresszusatz (z.&nbsp;B. c/o, Postfach)</label>
+    <input id="street2" name="street2" value="{{ customer.street2 if customer else '' }}">
+
     <label for="postal_code">PLZ</label>
     <input id="postal_code" name="postal_code" value="{{ customer.postal_code if customer else '' }}">
 

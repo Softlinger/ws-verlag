@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import get_current_user, require_login
 from app.config import settings
-from app.database import Base, SessionLocal, engine, get_db
+from app.database import Base, SessionLocal, engine, ensure_new_columns, get_db
 from app.models import Invoice, InvoiceStatus, User
 from app.routers import articles, auth, company, credit_notes, customers, dunning, help, invoices, orders, updates, users
 from app.services.update_check import check_for_update
@@ -23,6 +23,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 def create_tables():
     """Erstellt fehlende Tabellen. Fuer Schemaaenderungen im Produktivbetrieb Alembic-Migrationen verwenden."""
     Base.metadata.create_all(bind=engine)
+    ensure_new_columns()
 
 
 @app.on_event("startup")

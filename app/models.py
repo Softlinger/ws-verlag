@@ -93,6 +93,10 @@ class Company(Base):
 
     advertising_tax_rate: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=Decimal("5.00"))
 
+    # Relativer Pfad unter app/static/, z. B. "uploads/company_logo.jpg". Wird auf Auftrag/
+    # Rechnung/Gutschrift im Kopfbereich gedruckt (90x50mm, siehe app/services/pdf.py).
+    logo_path: Mapped[str] = mapped_column(String(255), default="")
+
     bank_accounts: Mapped[list["BankAccount"]] = relationship(back_populates="company")
 
 
@@ -118,6 +122,10 @@ class PaymentTerm(Base):
     days_due: Mapped[int] = mapped_column(default=14)
     description: Mapped[str] = mapped_column(String(255), default="")
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # Wortlaut, der auf Auftrag/Rechnung/Gutschrift zentriert unter den Positionen
+    # gedruckt wird (z. B. "Zahlbar nach Erhalt, ohne Abzug.").
+    printed_text: Mapped[str] = mapped_column(String(255), default="Zahlbar nach Erhalt, ohne Abzug.")
 
 
 class NumberRange(Base):
@@ -163,6 +171,7 @@ class Customer(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(255))
     street: Mapped[str] = mapped_column(String(255), default="")
+    street2: Mapped[str] = mapped_column(String(255), default="")  # Adresszusatz, z. B. c/o, Postfach
     postal_code: Mapped[str] = mapped_column(String(20), default="")
     city: Mapped[str] = mapped_column(String(128), default="")
     country: Mapped[str] = mapped_column(String(64), default="Oesterreich")

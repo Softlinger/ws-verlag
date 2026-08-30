@@ -1,6 +1,7 @@
 from decimal import Decimal
+from pathlib import Path
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Form, Request, UploadFile
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
@@ -11,6 +12,9 @@ from app.templating import templates
 
 
 router = APIRouter(prefix="/company", tags=["company"])
+
+LOGO_UPLOAD_DIR = Path("app/static/uploads")
+ALLOWED_LOGO_EXTENSIONS = {".jpg", ".jpeg"}
 
 
 def get_or_create_company(db: Session) -> Company:
@@ -105,6 +109,21 @@ def update_company(
     return RedirectResponse("/company", status_code=303)
 
 
+@router.post("/logo")
+def upload_logo(db: Session = Depends(get_db), user: User = Depends(require_admin), logo: UploadFile | None = None):
+    company = get_or_create_company(db)
+    if logo is not None and logo.filename:
+        extension = Path(logo.filename).suffix.lower()
+        if extension not in ALLOWED_LOGO_EXTENSIONS:
+            return RedirectResponse("/company?error=logo_type", status_code=303)
+        LOGO_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        target_path = LOGO_UPLOAD_DIR / f"company_logo{extension}"
+        target_path.write_bytes(logo.file.read())
+        company.logo_path = f"uploads/company_logo{extension}"
+        db.commit()
+    return RedirectResponse("/company", status_code=303)
+
+
 @router.post("/bank-accounts/new")
 def create_bank_account(
     db: Session = Depends(get_db),
@@ -143,11 +162,16 @@ def create_payment_term(
     name: str = Form(...),
     days_due: int = Form(14),
     description: str = Form(""),
+    printed_text: str = Form("Zahlbar nach Erhalt, ohne Abzug."),
     is_default: bool = Form(False),
 ):
     if is_default:
         db.query(PaymentTerm).update({"is_default": False})
-    db.add(PaymentTerm(name=name, days_due=days_due, description=description, is_default=is_default))
+    db.add(
+        PaymentTerm(
+            name=name, days_due=days_due, description=description, printed_text=printed_text, is_default=is_default
+        )
+    )
     db.commit()
     return RedirectResponse("/company", status_code=303)
 

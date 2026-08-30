@@ -36,6 +36,7 @@ def create_customer(
     user: User = Depends(require_login),
     name: str = Form(...),
     street: str = Form(""),
+    street2: str = Form(""),
     postal_code: str = Form(""),
     city: str = Form(""),
     country: str = Form("Oesterreich"),
@@ -50,6 +51,7 @@ def create_customer(
     customer = Customer(
         name=name,
         street=street,
+        street2=street2,
         postal_code=postal_code,
         city=city,
         country=country,
@@ -90,6 +92,7 @@ def update_customer(
     user: User = Depends(require_login),
     name: str = Form(...),
     street: str = Form(""),
+    street2: str = Form(""),
     postal_code: str = Form(""),
     city: str = Form(""),
     country: str = Form("Oesterreich"),
@@ -105,6 +108,7 @@ def update_customer(
     customer = db.get(Customer, customer_id)
     customer.name = name
     customer.street = street
+    customer.street2 = street2
     customer.postal_code = postal_code
     customer.city = city
     customer.country = country

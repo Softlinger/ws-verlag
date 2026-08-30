@@ -8,7 +8,7 @@
   if (addBtn) {
     addBtn.addEventListener('click', function () {
       const row = tbody.rows[0].cloneNode(true);
-      row.querySelectorAll('input, select').forEach(function (el) { el.value = el.dataset.default || ''; });
+      row.querySelectorAll('input, select, textarea').forEach(function (el) { el.value = el.dataset.default || ''; });
       tbody.appendChild(row);
     });
   }
@@ -23,7 +23,7 @@
     const row = select.closest('tr');
     if (!option || !option.value) return;
 
-    const descriptionInput = row.querySelector('input[name="description"]');
+    const descriptionInput = row.querySelector('textarea[name="description"], input[name="description"]');
     const priceInput = row.querySelector('input[name="unit_price"]');
     const vatSelect = row.querySelector('select[name="vat_rate"]');
 

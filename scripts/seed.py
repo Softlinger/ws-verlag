@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.auth import hash_password
-from app.database import Base, SessionLocal, engine
+from app.database import Base, SessionLocal, engine, ensure_new_columns
 from app.models import (
     Article,
     BankAccount,
@@ -30,6 +30,7 @@ from app.routers.company import get_or_create_company
 
 def main() -> None:
     Base.metadata.create_all(bind=engine)
+    ensure_new_columns()
     db = SessionLocal()
     try:
         if not db.query(User).filter(User.username == "admin").first():

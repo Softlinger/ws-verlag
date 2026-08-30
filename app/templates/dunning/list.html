@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Mahnwesen - WS-Verlag Verwaltung{% endblock %}
+{% block content %}
+<h1>Mahnwesen &mdash; &Uuml;berf&auml;llige Rechnungen</h1>
+<div class="card">
+  <table>
+    <thead><tr><th scope="col">Nummer</th><th scope="col">Kunde</th><th scope="col">F&auml;llig</th><th scope="col">Bisherige Mahnungen</th><th scope="col">Aktion</th></tr></thead>
+    <tbody>
+      {% for invoice in invoices %}
+      <tr>
+        <td>{{ invoice.number }}</td>
+        <td>{{ invoice.customer.name }}</td>
+        <td>{{ invoice.due_date.strftime('%d.%m.%Y') }}</td>
+        <td>{{ invoice.dunnings|length }}</td>
+        <td><a href="/invoices/{{ invoice.id }}">Zur Rechnung</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5">Keine &uuml;berf&auml;lligen Rechnungen.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

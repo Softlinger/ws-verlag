@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Kunden - WS-Verlag Verwaltung{% endblock %}
+{% block content %}
+<h1>Kunden</h1>
+<p><a class="btn" href="/customers/new">Neuer Kunde</a></p>
+<div class="card">
+  <table>
+    <caption class="sr-only">Kundenliste</caption>
+    <thead>
+      <tr><th scope="col">Name</th><th scope="col">Ort</th><th scope="col">UID</th><th scope="col">Reverse-Charge</th><th scope="col">Aktiv</th><th scope="col">Aktion</th></tr>
+    </thead>
+    <tbody>
+      {% for customer in customers %}
+      <tr>
+        <td>{{ customer.name }}</td>
+        <td>{{ customer.postal_code }} {{ customer.city }}</td>
+        <td>{{ customer.uid_number or "-" }}</td>
+        <td>{{ "Ja" if customer.reverse_charge_applicable else "Nein" }}</td>
+        <td>{{ "Ja" if customer.active else "Nein" }}</td>
+        <td><a href="/customers/{{ customer.id }}/edit">Bearbeiten</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">Noch keine Kunden angelegt.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

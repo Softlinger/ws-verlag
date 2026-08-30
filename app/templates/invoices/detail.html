@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Rechnung {{ invoice.number }} - WS-Verlag Verwaltung{% endblock %}
+{% block content %}
+<h1>Rechnung {{ invoice.number }} <span class="status-badge status-{{ invoice.status.value }}">{{ invoice.status.value }}</span></h1>
+<div class="card">
+  <p>Kunde: <strong>{{ invoice.customer.name }}</strong>{% if invoice.reverse_charge %} <em>(Reverse-Charge)</em>{% endif %}</p>
+  <p>Rechnungsdatum: {{ invoice.invoice_date.strftime('%d.%m.%Y') }} &mdash; F&auml;llig: {{ invoice.due_date.strftime('%d.%m.%Y') }}</p>
+
+  <table>
+    <thead><tr><th scope="col">Bezeichnung</th><th scope="col">Menge</th><th scope="col">Einzelpreis</th><th scope="col">MwSt.</th><th scope="col">Summe</th></tr></thead>
+    <tbody>
+      {% for item in invoice.items %}
+      <tr>
+        <td>{{ item.description }}</td>
+        <td>{{ item.quantity }}</td>
+        <td>{{ "%.2f"|format(item.unit_price) }} EUR</td>
+        <td>{{ "RC" if invoice.reverse_charge else item.vat_rate ~ "%" }}</td>
+        <td>{{ "%.2f"|format(item.net_total) }} EUR</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p>Nettosumme: {{ "%.2f"|format(totals.net_total) }} EUR</p>
+  {% if invoice.reverse_charge %}
+  <p>USt: Reverse-Charge-Verfahren, Steuerschuld beim Leistungsempf&auml;nger</p>
+  {% else %}
+  {% for rate, amount in totals.vat_breakdown.items() %}
+  {% if rate != "werbesteuer" %}<p>USt {{ rate }}%: {{ "%.2f"|format(amount) }} EUR</p>{% endif %}
+  {% endfor %}
+  {% endif %}
+  {% if invoice.advertising_tax_applicable %}
+  <p>Werbesteuer {{ invoice.advertising_tax_rate }}%: {{ "%.2f"|format(totals.vat_breakdown.get("werbesteuer", 0)) }} EUR</p>
+  {% endif %}
+  <p><strong>Gesamtbetrag: {{ "%.2f"|format(totals.gross_total) }} EUR</strong></p>
+  <p>Bereits bezahlt: {{ "%.2f"|format(paid_total) }} EUR &mdash; Offen: {{ "%.2f"|format(open_amount) }} EUR</p>
+
+  <p>
+    <a class="btn" href="/invoices/{{ invoice.id }}/pdf" target="_blank">PDF ansehen</a>
+    <form style="display:inline" method="post" action="/invoices/{{ invoice.id }}/send">
+      <button type="submit" class="secondary">Per E-Mail senden</button>
+    </form>
+    <a class="btn secondary" href="/credit-notes/new?invoice_id={{ invoice.id }}">Gutschrift erstellen</a>
+    <form style="display:inline" method="post" action="/dunning/{{ invoice.id }}/create">
+      <button type="submit" class="secondary">Mahnung erstellen</button>
+    </form>
+  </p>
+</div>
+
+<div class="card">
+  <h2>Zahlungen</h2>
+  <table>
+    <thead><tr><th scope="col">Datum</th><th scope="col">Betrag</th><th scope="col">Art</th><th scope="col">Notiz</th></tr></thead>
+    <tbody>
+      {% for payment in invoice.payments %}
+      <tr><td>{{ payment.payment_date.strftime('%d.%m.%Y') }}</td><td>{{ "%.2f"|format(payment.amount) }} EUR</td><td>{{ payment.method }}</td><td>{{ payment.note }}</td></tr>
+      {% else %}
+      <tr><td colspan="4">Noch keine Zahlungen erfasst.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <form method="post" action="/invoices/{{ invoice.id }}/payments">
+    <label for="amount">Betrag</label>
+    <input id="amount" name="amount" type="number" step="0.01" required>
+    <label for="payment_date">Datum</label>
+    <input id="payment_date" name="payment_date" type="date" required>
+    <label for="method">Zahlungsart</label>
+    <input id="method" name="method" value="Ueberweisung">
+    <label for="note">Notiz</label>
+    <input id="note" name="note">
+    <p><button type="submit" style="margin-top: 1rem;">Zahlung erfassen</button></p>
+  </form>
+</div>
+
+{% if invoice.dunnings %}
+<div class="card">
+  <h2>Mahnungen</h2>
+  <table>
+    <thead><tr><th scope="col">Stufe</th><th scope="col">Datum</th><th scope="col">Geb&uuml;hr</th><th scope="col">Aktion</th></tr></thead>
+    <tbody>
+      {% for dunning in invoice.dunnings %}
+      <tr>
+        <td>{{ dunning.level }}</td>
+        <td>{{ dunning.created_at.strftime('%d.%m.%Y') }}</td>
+        <td>{{ "%.2f"|format(dunning.fee_amount) }} EUR</td>
+        <td>
+          <a href="/dunning/{{ dunning.id }}/pdf" target="_blank">PDF</a>
+          <form style="display:inline" method="post" action="/dunning/{{ dunning.id }}/send">
+            <button type="submit" class="secondary">Senden</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

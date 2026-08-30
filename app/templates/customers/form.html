@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Kunde - WS-Verlag Verwaltung{% endblock %}
+{% block content %}
+<h1>{{ "Kunde bearbeiten" if customer else "Neuer Kunde" }}</h1>
+<div class="card">
+  <form method="post" action="{{ '/customers/' ~ customer.id ~ '/edit' if customer else '/customers/new' }}">
+    <label for="name">Name / Firma</label>
+    <input id="name" name="name" required value="{{ customer.name if customer else '' }}">
+
+    <label for="street">Stra&szlig;e</label>
+    <input id="street" name="street" value="{{ customer.street if customer else '' }}">
+
+    <label for="postal_code">PLZ</label>
+    <input id="postal_code" name="postal_code" value="{{ customer.postal_code if customer else '' }}">
+
+    <label for="city">Ort</label>
+    <input id="city" name="city" value="{{ customer.city if customer else '' }}">
+
+    <label for="country">Land</label>
+    <input id="country" name="country" value="{{ customer.country if customer else 'Oesterreich' }}">
+
+    <label for="is_eu_country">
+      <input id="is_eu_country" name="is_eu_country" type="checkbox" style="width:auto; display:inline-block;" {{ "checked" if customer and customer.is_eu_country else "" }}>
+      Ausl&auml;ndischer EU-Kunde (Reverse-Charge bei g&uuml;ltiger UID)
+    </label>
+
+    <label for="uid_number">UID-Nummer</label>
+    <input id="uid_number" name="uid_number" value="{{ customer.uid_number if customer else '' }}">
+
+    <label for="email">E-Mail</label>
+    <input id="email" name="email" type="email" value="{{ customer.email if customer else '' }}">
+
+    <label for="phone">Telefon</label>
+    <input id="phone" name="phone" value="{{ customer.phone if customer else '' }}">
+
+    <label for="contact_person">Ansprechpartner</label>
+    <input id="contact_person" name="contact_person" value="{{ customer.contact_person if customer else '' }}">
+
+    <label for="payment_term_id">Zahlungsbedingung</label>
+    <select id="payment_term_id" name="payment_term_id">
+      <option value="">- keine -</option>
+      {% for term in payment_terms %}
+      <option value="{{ term.id }}" {{ "selected" if customer and customer.payment_term_id == term.id else "" }}>{{ term.name }} ({{ term.days_due }} Tage)</option>
+      {% endfor %}
+    </select>
+
+    <label for="bank_account_id">Bankkonto</label>
+    <select id="bank_account_id" name="bank_account_id">
+      <option value="">- keines -</option>
+      {% for account in bank_accounts %}
+      <option value="{{ account.id }}" {{ "selected" if customer and customer.bank_account_id == account.id else "" }}>{{ account.label }} ({{ account.iban }})</option>
+      {% endfor %}
+    </select>
+
+    {% if customer %}
+    <label for="active">
+      <input id="active" name="active" type="checkbox" style="width:auto; display:inline-block;" {{ "checked" if customer.active else "" }}>
+      Aktiv
+    </label>
+    {% endif %}
+
+    <p><button type="submit" style="margin-top: 1rem;">Speichern</button> <a class="btn secondary" href="/customers">Abbrechen</a></p>
+  </form>
+</div>
+{% endblock %}

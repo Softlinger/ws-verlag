@@ -1,0 +1,99 @@
+:root {
+  --color-bg: #f7f7f5;
+  --color-surface: #ffffff;
+  --color-text: #1f2933;
+  --color-muted: #52606d;
+  --color-primary: #2f3e46;
+  --color-primary-contrast: #ffffff;
+  --color-border: #d9dde3;
+  --color-danger: #b3261e;
+  --color-success: #1e6b3a;
+  --focus-ring: #1a5fb4;
+  font-size: 16px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
+}
+
+a { color: var(--color-primary); }
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  padding: 0.5rem 1rem;
+  z-index: 100;
+}
+.skip-link:focus { left: 0; }
+
+header.app-header {
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+header.app-header a { color: var(--color-primary-contrast); text-decoration: none; }
+header.app-header nav ul { list-style: none; display: flex; gap: 1.25rem; margin: 0; padding: 0; flex-wrap: wrap; }
+
+main { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--color-border); }
+
+label { display: block; font-weight: 600; margin-top: 0.75rem; }
+input, select, textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 1rem;
+  margin-top: 0.25rem;
+}
+input:focus, select:focus, textarea:focus, a:focus, button:focus {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+button, .btn {
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  border: none;
+  padding: 0.6rem 1.1rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+button.secondary, .btn.secondary { background: var(--color-surface); color: var(--color-primary); border: 1px solid var(--color-border); }
+button.danger, .btn.danger { background: var(--color-danger); }
+
+.status-badge { padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.85rem; }
+.status-offen { background: #fdecea; color: var(--color-danger); }
+.status-teilbezahlt { background: #fff4e0; color: #8a5a00; }
+.status-bezahlt { background: #e6f4ea; color: var(--color-success); }
+
+.error-message { color: var(--color-danger); font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Auftr&auml;ge - WS-Verlag Verwaltung{% endblock %}
+{% block content %}
+<h1>Auftr&auml;ge</h1>
+<p><a class="btn" href="/orders/new">Neuer Auftrag</a></p>
+<div class="card">
+  <table>
+    <thead><tr><th scope="col">Nummer</th><th scope="col">Kunde</th><th scope="col">Datum</th><th scope="col">Aktion</th></tr></thead>
+    <tbody>
+      {% for order in orders %}
+      <tr>
+        <td>{{ order.number }}</td>
+        <td>{{ order.customer.name }}</td>
+        <td>{{ order.order_date.strftime('%d.%m.%Y') }}</td>
+        <td><a href="/orders/{{ order.id }}">Ansehen</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">Noch keine Auftr&auml;ge angelegt.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

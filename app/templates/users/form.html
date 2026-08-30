@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Neuer Benutzer - WS-Verlag Verwaltung{% endblock %}
+{% block content %}
+<h1>Neuer Benutzer</h1>
+<div class="card">
+  <form method="post" action="/users/new">
+    <label for="username">Benutzername</label>
+    <input id="username" name="username" required autocomplete="username">
+    <label for="full_name">Voller Name</label>
+    <input id="full_name" name="full_name" required>
+    <label for="password">Passwort</label>
+    <input id="password" name="password" type="password" required autocomplete="new-password">
+    <label for="role">Rolle</label>
+    <select id="role" name="role">
+      {% for r in roles %}
+      <option value="{{ r.value }}">{{ r.value }}</option>
+      {% endfor %}
+    </select>
+    <p><button type="submit" style="margin-top: 1rem;">Anlegen</button> <a class="btn secondary" href="/users">Abbrechen</a></p>
+  </form>
+</div>
+{% endblock %}

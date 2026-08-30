@@ -1,0 +1,12 @@
+<script>
+(function () {
+  const addBtn = document.getElementById('add-item-row');
+  const table = document.getElementById('items-table').querySelector('tbody');
+  if (!addBtn) return;
+  addBtn.addEventListener('click', function () {
+    const row = table.rows[0].cloneNode(true);
+    row.querySelectorAll('input, select').forEach(function (el) { el.value = el.dataset.default || ''; });
+    table.appendChild(row);
+  });
+})();
+</script>

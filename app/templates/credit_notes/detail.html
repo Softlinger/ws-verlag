@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Gutschrift {{ credit_note.number }} - WS-Verlag Verwaltung{% endblock %}
+{% block content %}
+<h1>Gutschrift {{ credit_note.number }}</h1>
+<div class="card">
+  <p>Rechnung: <a href="/invoices/{{ credit_note.invoice.id }}">{{ credit_note.invoice.number }}</a></p>
+  <p>Kunde: {{ credit_note.invoice.customer.name }}</p>
+  <p>Datum: {{ credit_note.credit_note_date.strftime('%d.%m.%Y') }}</p>
+  {% if credit_note.reason %}<p>Grund: {{ credit_note.reason }}</p>{% endif %}
+  <table>
+    <thead><tr><th scope="col">Bezeichnung</th><th scope="col">Menge</th><th scope="col">Einzelpreis</th><th scope="col">MwSt.</th><th scope="col">Summe</th></tr></thead>
+    <tbody>
+      {% for item in credit_note.items %}
+      <tr><td>{{ item.description }}</td><td>{{ item.quantity }}</td><td>{{ "%.2f"|format(item.unit_price) }} EUR</td><td>{{ item.vat_rate }}%</td><td>{{ "%.2f"|format(item.net_total) }} EUR</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p><strong>Gesamtbetrag: {{ "%.2f"|format(totals.gross_total) }} EUR</strong></p>
+  <p>
+    <a class="btn" href="/credit-notes/{{ credit_note.id }}/pdf" target="_blank">PDF ansehen</a>
+    <form style="display:inline" method="post" action="/credit-notes/{{ credit_note.id }}/send">
+      <button type="submit" class="secondary">Per E-Mail senden</button>
+    </form>
+  </p>
+</div>
+{% endblock %}

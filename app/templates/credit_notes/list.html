@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Gutschriften - WS-Verlag Verwaltung{% endblock %}
+{% block content %}
+<h1>Gutschriften</h1>
+<p><a class="btn" href="/credit-notes/new">Neue Gutschrift</a></p>
+<div class="card">
+  <table>
+    <thead><tr><th scope="col">Nummer</th><th scope="col">Rechnung</th><th scope="col">Datum</th><th scope="col">Aktion</th></tr></thead>
+    <tbody>
+      {% for credit_note in credit_notes %}
+      <tr>
+        <td>{{ credit_note.number }}</td>
+        <td>{{ credit_note.invoice.number }}</td>
+        <td>{{ credit_note.credit_note_date.strftime('%d.%m.%Y') }}</td>
+        <td><a href="/credit-notes/{{ credit_note.id }}">Ansehen</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">Noch keine Gutschriften angelegt.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

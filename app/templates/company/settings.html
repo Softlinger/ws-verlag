@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Firmenstammdaten - WS-Verlag Verwaltung{% endblock %}
+{% block content %}
+<h1>Firmenstammdaten</h1>
+
+<div class="card">
+  <h2>Allgemein & SMTP</h2>
+  <form method="post" action="/company/update">
+    <label for="name">Firmenname</label>
+    <input id="name" name="name" required value="{{ company.name }}">
+    <label for="street">Stra&szlig;e</label>
+    <input id="street" name="street" value="{{ company.street }}">
+    <label for="postal_code">PLZ</label>
+    <input id="postal_code" name="postal_code" value="{{ company.postal_code }}">
+    <label for="city">Ort</label>
+    <input id="city" name="city" value="{{ company.city }}">
+    <label for="country">Land</label>
+    <input id="country" name="country" value="{{ company.country }}">
+    <label for="uid_number">UID-Nummer</label>
+    <input id="uid_number" name="uid_number" value="{{ company.uid_number }}">
+    <label for="firmenbuchnummer">Firmenbuchnummer</label>
+    <input id="firmenbuchnummer" name="firmenbuchnummer" value="{{ company.firmenbuchnummer }}">
+    <label for="phone">Telefon</label>
+    <input id="phone" name="phone" value="{{ company.phone }}">
+    <label for="email">E-Mail</label>
+    <input id="email" name="email" value="{{ company.email }}">
+    <label for="website">Website</label>
+    <input id="website" name="website" value="{{ company.website }}">
+    <label for="advertising_tax_rate">Werbesteuersatz (%)</label>
+    <input id="advertising_tax_rate" name="advertising_tax_rate" type="number" step="0.01" value="{{ company.advertising_tax_rate }}">
+
+    <h3>SMTP-Server (f&uuml;r Belegversand)</h3>
+    <label for="smtp_host">SMTP-Host</label>
+    <input id="smtp_host" name="smtp_host" value="{{ company.smtp_host }}">
+    <label for="smtp_port">SMTP-Port</label>
+    <input id="smtp_port" name="smtp_port" type="number" value="{{ company.smtp_port }}">
+    <label for="smtp_username">SMTP-Benutzername</label>
+    <input id="smtp_username" name="smtp_username" value="{{ company.smtp_username }}">
+    <label for="smtp_password">SMTP-Passwort (leer lassen = unver&auml;ndert)</label>
+    <input id="smtp_password" name="smtp_password" type="password" autocomplete="new-password">
+    <label for="smtp_use_tls">
+      <input id="smtp_use_tls" name="smtp_use_tls" type="checkbox" style="width:auto; display:inline-block;" {{ "checked" if company.smtp_use_tls else "" }}>
+      STARTTLS verwenden
+    </label>
+    <label for="smtp_from_address">Absenderadresse</label>
+    <input id="smtp_from_address" name="smtp_from_address" type="email" value="{{ company.smtp_from_address }}">
+    <label for="smtp_from_name">Absendername</label>
+    <input id="smtp_from_name" name="smtp_from_name" value="{{ company.smtp_from_name }}">
+
+    <p><button type="submit" style="margin-top: 1rem;">Speichern</button></p>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Bankkonten</h2>
+  <table>
+    <thead><tr><th scope="col">Label</th><th scope="col">IBAN</th><th scope="col">BIC</th><th scope="col">Bank</th><th scope="col">Standard</th><th scope="col">Aktion</th></tr></thead>
+    <tbody>
+      {% for account in bank_accounts %}
+      <tr>
+        <td>{{ account.label }}</td><td>{{ account.iban }}</td><td>{{ account.bic }}</td><td>{{ account.bank_name }}</td>
+        <td>{{ "Ja" if account.is_default else "Nein" }}</td>
+        <td>
+          <form method="post" action="/company/bank-accounts/{{ account.id }}/delete">
+            <button type="submit" class="danger">L&ouml;schen</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <form method="post" action="/company/bank-accounts/new">
+    <label for="label">Label</label>
+    <input id="label" name="label" required>
+    <label for="iban">IBAN</label>
+    <input id="iban" name="iban" required>
+    <label for="bic">BIC</label>
+    <input id="bic" name="bic">
+    <label for="bank_name">Bankname</label>
+    <input id="bank_name" name="bank_name">
+    <label for="is_default">
+      <input id="is_default" name="is_default" type="checkbox" style="width:auto; display:inline-block;">
+      Standardkonto
+    </label>
+    <p><button type="submit" style="margin-top: 1rem;">Bankkonto hinzuf&uuml;gen</button></p>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Zahlungsbedingungen</h2>
+  <table>
+    <thead><tr><th scope="col">Name</th><th scope="col">Frist (Tage)</th><th scope="col">Standard</th><th scope="col">Aktion</th></tr></thead>
+    <tbody>
+      {% for term in payment_terms %}
+      <tr>
+        <td>{{ term.name }}</td><td>{{ term.days_due }}</td><td>{{ "Ja" if term.is_default else "Nein" }}</td>
+        <td><form method="post" action="/company/payment-terms/{{ term.id }}/delete"><button type="submit" class="danger">L&ouml;schen</button></form></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <form method="post" action="/company/payment-terms/new">
+    <label for="pt_name">Name</label>
+    <input id="pt_name" name="name" required>
+    <label for="days_due">Frist (Tage)</label>
+    <input id="days_due" name="days_due" type="number" value="14">
+    <label for="pt_description">Beschreibung</label>
+    <input id="pt_description" name="description">
+    <label for="pt_is_default">
+      <input id="pt_is_default" name="is_default" type="checkbox" style="width:auto; display:inline-block;">
+      Standard
+    </label>
+    <p><button type="submit" style="margin-top: 1rem;">Zahlungsbedingung hinzuf&uuml;gen</button></p>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Belegnummernkreise</h2>
+  {% for number_range in number_ranges %}
+  <form method="post" action="/company/number-ranges/{{ number_range.id }}/update">
+    <h3>{{ number_range.document_type.value|capitalize }}</h3>
+    <label for="prefix_{{ number_range.id }}">Pr&auml;fix</label>
+    <input id="prefix_{{ number_range.id }}" name="prefix" value="{{ number_range.prefix }}">
+    <label for="suffix_{{ number_range.id }}">Suffix</label>
+    <input id="suffix_{{ number_range.id }}" name="suffix" value="{{ number_range.suffix }}">
+    <label for="start_{{ number_range.id }}">Startnummer</label>
+    <input id="start_{{ number_range.id }}" name="start_number" type="number" value="{{ number_range.start_number }}">
+    <label for="digits_{{ number_range.id }}">Stellen (f&uuml;hrende Nullen)</label>
+    <input id="digits_{{ number_range.id }}" name="digits" type="number" value="{{ number_range.digits }}">
+    <p>Aktueller Stand: {{ number_range.current_number }}</p>
+    <p><button type="submit">Speichern</button></p>
+  </form>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <h2>Mahnstufen</h2>
+  {% for level in dunning_levels %}
+  <form method="post" action="/company/dunning-levels/{{ level.id }}/update">
+    <h3>{{ level.level }}. Mahnstufe</h3>
+    <label for="due_days_{{ level.id }}">Frist (Tage)</label>
+    <input id="due_days_{{ level.id }}" name="due_days" type="number" value="{{ level.due_days }}">
+    <label for="fee_{{ level.id }}">Mahngeb&uuml;hr (EUR)</label>
+    <input id="fee_{{ level.id }}" name="fee_amount" type="number" step="0.01" value="{{ level.fee_amount }}">
+    <label for="text_{{ level.id }}">Mahntext (Platzhalter: {kunde}, {rechnungsnummer}, {rechnungsdatum}, {betrag}, {faelligkeitsdatum})</label>
+    <textarea id="text_{{ level.id }}" name="text_template" rows="5">{{ level.text_template }}</textarea>
+    <p><button type="submit">Speichern</button></p>
+  </form>
+  {% endfor %}
+</div>
+{% endblock %}

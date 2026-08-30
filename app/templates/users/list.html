@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Benutzer - WS-Verlag Verwaltung{% endblock %}
+{% block content %}
+<h1>Benutzer</h1>
+<p><a class="btn" href="/users/new">Neuer Benutzer</a></p>
+<div class="card">
+  <table>
+    <thead><tr><th scope="col">Benutzername</th><th scope="col">Name</th><th scope="col">Rolle</th><th scope="col">Aktiv</th><th scope="col">Aktion</th></tr></thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.username }}</td><td>{{ u.full_name }}</td><td>{{ u.role.value }}</td><td>{{ "Ja" if u.active else "Nein" }}</td>
+        <td>
+          {% if u.active %}
+          <form method="post" action="/users/{{ u.id }}/deactivate"><button type="submit" class="danger">Deaktivieren</button></form>
+          {% else %}
+          <form method="post" action="/users/{{ u.id }}/activate"><button type="submit" class="secondary">Aktivieren</button></form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

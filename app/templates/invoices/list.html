@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Rechnungen - WS-Verlag Verwaltung{% endblock %}
+{% block content %}
+<h1>Rechnungen</h1>
+<p><a class="btn" href="/invoices/new">Neue Rechnung</a></p>
+<div class="card">
+  <table>
+    <thead><tr><th scope="col">Nummer</th><th scope="col">Kunde</th><th scope="col">Datum</th><th scope="col">F&auml;llig</th><th scope="col">Betrag</th><th scope="col">Status</th><th scope="col">Aktion</th></tr></thead>
+    <tbody>
+      {% for invoice in invoices %}
+      <tr>
+        <td>{{ invoice.number }}</td>
+        <td>{{ invoice.customer.name }}</td>
+        <td>{{ invoice.invoice_date.strftime('%d.%m.%Y') }}</td>
+        <td>{{ invoice.due_date.strftime('%d.%m.%Y') }}</td>
+        <td>{{ "%.2f"|format(totals_by_id[invoice.id].gross_total) }} EUR</td>
+        <td><span class="status-badge status-{{ invoice.status.value }}">{{ invoice.status.value }}</span></td>
+        <td><a href="/invoices/{{ invoice.id }}">Ansehen</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7">Noch keine Rechnungen angelegt.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

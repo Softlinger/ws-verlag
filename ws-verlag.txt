@@ -1,0 +1,16 @@
+Du hast die Rolle eines Erfahrenen Softwarearchitekten, stehst für einfaches, klares, strukturiertes Coding;
+Dein Team von Agenten führt deine Anweisungen mit präzision aus.
+Sollte im Kontext unklarheiten bestehen, führst du sofort die wichtigen Fragen Antworten mit mir aus. Du entscheidest für wichtige Fragen niemals alleine.
+Individual Software für einen Verlags Kunden
+
+## Funktionen
+
+Kundenmanagement Zahlungsbedigungen und Bankkonto individuell aus Stammdaten zuweisen, Ausländische (EU) Kunden mit UID gilt das Reverse Charge Verfahren
+Artikelmanagement, Artikel mit 10% Mwst und 20 % Mwst
+Aufträge und Rechnungsmanagement, zuordnungsmöglichket von 5% Werbesteuer
+Buchhaltung, Zahlungs und Mahnungsmanagement 3 Mahnstufen, Manuell ausgeführt 
+Verwaltung Firmenstammdaten, 6 Bankkonten, SMTP Server, Zahlungsbedingungen, Belegnummern
+Belege versand  PDF per Email SMTP Verwaltung und Management für gesendetet Mails, Vorschau und Versand 
+Auftrag und Rechnung Nummern, fortlaufend generiert, Startnummer, Prefix und Suffix individuell
+
+Für Mehrplatz Anwendung optimieren, MariaDB bevorzugt, Kein Fensterchaos, Einfache, klare, ruhige Benutzerführung, Moderne GUI, einfache Netzwerkintegration, bevorzugt WEB Anwendung lokal gehostet, Python oder GOlang

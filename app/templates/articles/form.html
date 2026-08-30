@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Artikel - WS-Verlag Verwaltung{% endblock %}
+{% block content %}
+<h1>{{ "Artikel bearbeiten" if article else "Neuer Artikel" }}</h1>
+<div class="card">
+  <form method="post" action="{{ '/articles/' ~ article.id ~ '/edit' if article else '/articles/new' }}">
+    <label for="name">Name</label>
+    <input id="name" name="name" required value="{{ article.name if article else '' }}">
+
+    <label for="description">Beschreibung</label>
+    <textarea id="description" name="description" rows="3">{{ article.description if article else '' }}</textarea>
+
+    <label for="unit_price">Einzelpreis (netto, EUR)</label>
+    <input id="unit_price" name="unit_price" type="number" step="0.01" min="0" required value="{{ article.unit_price if article else '' }}">
+
+    <label for="vat_rate">MwSt.-Satz</label>
+    <select id="vat_rate" name="vat_rate">
+      <option value="10" {{ "selected" if article and article.vat_rate == 10 else "" }}>10%</option>
+      <option value="20" {{ "selected" if not article or article.vat_rate == 20 else "" }}>20%</option>
+    </select>
+
+    <label for="unit">Einheit</label>
+    <input id="unit" name="unit" value="{{ article.unit if article else 'Stk' }}">
+
+    {% if article %}
+    <label for="active">
+      <input id="active" name="active" type="checkbox" style="width:auto; display:inline-block;" {{ "checked" if article.active else "" }}>
+      Aktiv
+    </label>
+    {% endif %}
+
+    <p><button type="submit" style="margin-top: 1rem;">Speichern</button> <a class="btn secondary" href="/articles">Abbrechen</a></p>
+  </form>
+</div>
+{% endblock %}

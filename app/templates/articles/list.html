@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Artikel - WS-Verlag Verwaltung{% endblock %}
+{% block content %}
+<h1>Artikel</h1>
+<p><a class="btn" href="/articles/new">Neuer Artikel</a></p>
+<div class="card">
+  <table>
+    <thead><tr><th scope="col">Name</th><th scope="col">Preis</th><th scope="col">MwSt.</th><th scope="col">Einheit</th><th scope="col">Aktiv</th><th scope="col">Aktion</th></tr></thead>
+    <tbody>
+      {% for article in articles %}
+      <tr>
+        <td>{{ article.name }}</td>
+        <td>{{ "%.2f"|format(article.unit_price) }} EUR</td>
+        <td>{{ article.vat_rate }}%</td>
+        <td>{{ article.unit }}</td>
+        <td>{{ "Ja" if article.active else "Nein" }}</td>
+        <td><a href="/articles/{{ article.id }}/edit">Bearbeiten</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">Noch keine Artikel angelegt.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

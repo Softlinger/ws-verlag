@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - WS-Verlag Verwaltung{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+<div class="card">
+  <p>Offene Rechnungen: <strong>{{ open_invoices }}</strong></p>
+  <p>Davon &uuml;berf&auml;llig: <strong>{{ overdue_invoices }}</strong></p>
+</div>
+<div class="card">
+  <h2>Schnellzugriff</h2>
+  <p>
+    <a class="btn" href="/customers/new">Neuer Kunde</a>
+    <a class="btn" href="/orders/new">Neuer Auftrag</a>
+    <a class="btn" href="/invoices/new">Neue Rechnung</a>
+    <a class="btn secondary" href="/dunning">Mahnwesen</a>
+  </p>
+</div>
+{% endblock %}

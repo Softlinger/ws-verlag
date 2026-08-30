@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Auftrag {{ order.number }} - WS-Verlag Verwaltung{% endblock %}
+{% block content %}
+<h1>Auftrag {{ order.number }}</h1>
+<div class="card">
+  <p>Kunde: <strong>{{ order.customer.name }}</strong></p>
+  <p>Datum: {{ order.order_date.strftime('%d.%m.%Y') }}</p>
+  {% if order.note %}<p>Notiz: {{ order.note }}</p>{% endif %}
+  <table>
+    <thead><tr><th scope="col">Bezeichnung</th><th scope="col">Menge</th><th scope="col">Einzelpreis</th><th scope="col">MwSt.</th><th scope="col">Summe</th></tr></thead>
+    <tbody>
+      {% for item in order.items %}
+      <tr>
+        <td>{{ item.description }}</td>
+        <td>{{ item.quantity }}</td>
+        <td>{{ "%.2f"|format(item.unit_price) }} EUR</td>
+        <td>{{ item.vat_rate }}%</td>
+        <td>{{ "%.2f"|format(item.net_total) }} EUR</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p><a class="btn" href="/invoices/new?order_id={{ order.id }}">Rechnung aus Auftrag erstellen</a></p>
+</div>
+{% endblock %}

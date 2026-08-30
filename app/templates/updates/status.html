@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Updates - WS-Verlag Verwaltung{% endblock %}
+{% block content %}
+<h1>Updates</h1>
+
+<div class="card">
+  <p>Installierte Version: <strong>{{ current_version }}</strong></p>
+  <p>Zuletzt geprueft: {{ state.last_checked_at.strftime('%d.%m.%Y %H:%M') if state.last_checked_at else "noch nie" }}</p>
+  {% if state.check_error %}
+  <p class="error-message" role="alert">{{ state.check_error }}</p>
+  {% endif %}
+  <form method="post" action="/updates/check">
+    <button type="submit" class="secondary">Jetzt auf Updates pr&uuml;fen</button>
+  </form>
+</div>
+
+{% if state.latest_version %}
+<div class="card">
+  <h2>Update verf&uuml;gbar: Version {{ state.latest_version }}</h2>
+  {% if state.release_date %}<p>Ver&ouml;ffentlicht am: {{ state.release_date }}</p>{% endif %}
+  {% if state.changelog %}
+  <h3>&Auml;nderungen</h3>
+  <pre style="white-space: pre-wrap;">{{ state.changelog }}</pre>
+  {% endif %}
+
+  {% if state.apply_status.value == "none" %}
+  <p><strong>Soll ich das Update installieren?</strong></p>
+  <p>Es wird vorab automatisch eine Sicherung angelegt. Schl&auml;gt die Installation
+     oder der anschlie&szlig;ende Funktionstest fehl, wird automatisch auf die aktuelle
+     Version zur&uuml;ckgesetzt.</p>
+  <form method="post" action="/updates/apply">
+    <button type="submit">Ja, Update installieren</button>
+  </form>
+  {% elif state.apply_status.value == "angefordert" %}
+  <p>Update wurde angefordert und wird in K&uuml;rze installiert. Diese Seite kann neu geladen werden, um den Fortschritt zu sehen.</p>
+  {% elif state.apply_status.value == "wird_installiert" %}
+  <p>Installation l&auml;uft gerade&hellip;</p>
+  {% elif state.apply_status.value == "erfolgreich" %}
+  <p>Update erfolgreich installiert{% if state.apply_finished_at %} am {{ state.apply_finished_at.strftime('%d.%m.%Y %H:%M') }}{% endif %}.</p>
+  {% elif state.apply_status.value == "fehlgeschlagen" %}
+  <p class="error-message" role="alert">Installation fehlgeschlagen: {{ state.apply_message }}</p>
+  <form method="post" action="/updates/apply">
+    <button type="submit" class="secondary">Erneut versuchen</button>
+  </form>
+  {% elif state.apply_status.value == "zurueckgerollt" %}
+  <p class="error-message" role="alert">Installation fehlgeschlagen, automatisch auf die vorherige Version zur&uuml;ckgesetzt: {{ state.apply_message }}</p>
+  <form method="post" action="/updates/apply">
+    <button type="submit" class="secondary">Erneut versuchen</button>
+  </form>
+  {% endif %}
+</div>
+{% else %}
+<div class="card">
+  <p>Keine neuere Version verf&uuml;gbar. Sie verwenden die aktuelle Version.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -6,6 +6,7 @@ from app.auth import create_session_token, get_current_user, verify_password
 from app.config import settings
 from app.database import get_db
 from app.models import User
+from app.services.update_check import check_for_update, get_or_create_update_state, is_check_due
 from app.templating import templates
 
 router = APIRouter(tags=["auth"])
@@ -30,6 +31,11 @@ def login_submit(
         return templates.TemplateResponse(
             request, "login.html", {"error": "Benutzername oder Passwort falsch."}, status_code=401
         )
+    if user.role.value == "admin":
+        state = get_or_create_update_state(db)
+        if is_check_due(state):
+            check_for_update(db)
+
     token = create_session_token(user.id)
     response = RedirectResponse("/", status_code=303)
     response.set_cookie(

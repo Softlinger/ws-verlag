@@ -1,0 +1,73 @@
+# Deployment fuer Synology NAS (Container Manager). Vor dem ersten Start:
+#   1. .env aus .env.example anlegen und Werte setzen (SECRET_KEY unbedingt!).
+#   2. `docker compose up -d` im Synology Container Manager oder per SSH.
+# Details und Sicherheitshinweise: siehe README-DEPLOYMENT.md.
+
+services:
+  app:
+    image: ${WS_VERLAG_IMAGE:-ws-verlag-app:local}
+    container_name: ws-verlag-app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: mysql+pymysql://ws_verlag:${MARIADB_PASSWORD}@mariadb:3306/ws_verlag
+    volumes:
+      - update_signal:/update-signal:ro
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - ws-verlag-net
+    # Bewusst KEIN Zugriff auf /var/run/docker.sock - siehe updater-Kommentar unten.
+
+  mariadb:
+    image: mariadb:11
+    container_name: ws-verlag-db
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ws_verlag
+      MARIADB_USER: ws_verlag
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - ws-verlag-net
+
+  # Einziger Container mit Docker-Socket-Zugriff (= faktisch Root-Rechte auf dem NAS-Host).
+  # Fuehrt Backup, Image-Pull, Container-Austausch und Rollback fuer den Update-Mechanismus
+  # aus - siehe app/routers/updates.py und updater/updater.py. Bewusst kein Port-Publish.
+  updater:
+    build: ./updater
+    container_name: ws-verlag-updater
+    restart: unless-stopped
+    environment:
+      APP_CONTAINER_NAME: ws-verlag-app
+      HEALTHCHECK_URL: http://ws-verlag-app:8000/healthz
+      REPORT_URL: http://ws-verlag-app:8000/updates/report
+      UPDATE_SIGNAL_DIR: /update-signal
+      BACKUP_DIR: /backups
+      MARIADB_CONTAINER_NAME: ws-verlag-db
+      MARIADB_DATABASE: ws_verlag
+      MARIADB_USER: root
+      MARIADB_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - update_signal:/update-signal
+      - ./backups:/backups
+    networks:
+      - ws-verlag-net
+
+networks:
+  ws-verlag-net:
+    driver: bridge
+
+volumes:
+  mariadb_data:
+  update_signal:

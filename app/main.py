@@ -1,3 +1,4 @@
+import asyncio
 from datetime import date
 
 from fastapi import Depends, FastAPI, Request
@@ -7,10 +8,12 @@ from sqlalchemy.orm import Session
 
 from app.auth import get_current_user, require_login
 from app.config import settings
-from app.database import Base, engine, get_db
+from app.database import Base, SessionLocal, engine, get_db
 from app.models import Invoice, InvoiceStatus, User
-from app.routers import articles, auth, company, credit_notes, customers, dunning, invoices, orders, users
+from app.routers import articles, auth, company, credit_notes, customers, dunning, invoices, orders, updates, users
+from app.services.update_check import check_for_update
 from app.templating import templates
+from app.version import __version__
 
 app = FastAPI(title=settings.app_name)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -20,6 +23,33 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 def create_tables():
     """Erstellt fehlende Tabellen. Fuer Schemaaenderungen im Produktivbetrieb Alembic-Migrationen verwenden."""
     Base.metadata.create_all(bind=engine)
+
+
+@app.on_event("startup")
+async def start_background_update_check():
+    """Prueft periodisch (Standard: alle 24h) die Website auf eine neue Version.
+
+    Rein informativ - installiert wird dadurch nichts. Siehe app/services/update_check.py.
+    """
+    if not settings.update_check_enabled:
+        return
+
+    async def loop() -> None:
+        while True:
+            db = SessionLocal()
+            try:
+                check_for_update(db)
+            finally:
+                db.close()
+            await asyncio.sleep(settings.update_check_interval_hours * 3600)
+
+    asyncio.create_task(loop())
+
+
+@app.get("/healthz")
+def healthz():
+    """Unauthentifizierter Health-Check fuer den Updater-Container nach einem Update."""
+    return {"status": "ok", "version": __version__}
 
 
 @app.middleware("http")
@@ -51,20 +81,24 @@ app.include_router(credit_notes.router)
 app.include_router(dunning.router)
 app.include_router(company.router)
 app.include_router(users.router)
+app.include_router(updates.router)
 
 
 @app.get("/")
 def dashboard(request: Request, db: Session = Depends(get_db), user: User = Depends(require_login)):
+    from app.services.update_check import get_or_create_update_state
+
     open_invoices = db.query(Invoice).filter(Invoice.status != InvoiceStatus.BEZAHLT).count()
     overdue_invoices = (
         db.query(Invoice)
         .filter(Invoice.status != InvoiceStatus.BEZAHLT, Invoice.due_date < date.today())
         .count()
     )
+    update_state = get_or_create_update_state(db) if user.role.value == "admin" else None
     return templates.TemplateResponse(
         request,
         "dashboard.html",
-        {"open_invoices": open_invoices, "overdue_invoices": overdue_invoices},
+        {"open_invoices": open_invoices, "overdue_invoices": overdue_invoices, "update_state": update_state},
     )
 
 

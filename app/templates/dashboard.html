@@ -2,6 +2,13 @@
 {% block title %}Dashboard - WS-Verlag Verwaltung{% endblock %}
 {% block content %}
 <h1>Dashboard</h1>
+
+{% if update_state and update_state.latest_version %}
+<div class="card" role="alert" style="border-color: var(--color-primary);">
+  <h2>Update verf&uuml;gbar: Version {{ update_state.latest_version }}</h2>
+  <p>Soll ich das Update installieren? <a href="/updates">Details ansehen und best&auml;tigen</a>.</p>
+</div>
+{% endif %}
 <div class="card">
   <p>Offene Rechnungen: <strong>{{ open_invoices }}</strong></p>
   <p>Davon &uuml;berf&auml;llig: <strong>{{ overdue_invoices }}</strong></p>

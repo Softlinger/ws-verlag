@@ -45,6 +45,15 @@ class MailStatus(str, enum.Enum):
     FEHLGESCHLAGEN = "fehlgeschlagen"
 
 
+class UpdateApplyStatus(str, enum.Enum):
+    NONE = "none"
+    ANGEFORDERT = "angefordert"
+    WIRD_INSTALLIERT = "wird_installiert"
+    ERFOLGREICH = "erfolgreich"
+    FEHLGESCHLAGEN = "fehlgeschlagen"
+    ZURUECKGEROLLT = "zurueckgerollt"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -327,6 +336,32 @@ class Dunning(Base):
     created_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
 
     invoice: Mapped["Invoice"] = relationship(back_populates="dunnings")
+
+
+class UpdateState(Base):
+    """Singleton-Zeile: Status der Update-Pruefung/-Installation gegen die Website.
+
+    Wird sowohl von der App (Pruefung, Anforderung) als auch vom separaten Updater-
+    Container (Installationsstatus) gelesen/geschrieben.
+    """
+
+    __tablename__ = "update_state"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    last_checked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    check_error: Mapped[str] = mapped_column(String(500), default="")
+
+    latest_version: Mapped[str] = mapped_column(String(32), default="")
+    changelog: Mapped[str] = mapped_column(Text, default="")
+    release_date: Mapped[str] = mapped_column(String(32), default="")
+    image_ref: Mapped[str] = mapped_column(String(255), default="")
+    image_digest: Mapped[str] = mapped_column(String(128), default="")
+
+    apply_status: Mapped[UpdateApplyStatus] = mapped_column(Enum(UpdateApplyStatus), default=UpdateApplyStatus.NONE)
+    apply_requested_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    apply_requested_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    apply_finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    apply_message: Mapped[str] = mapped_column(String(1000), default="")
 
 
 class MailLog(Base):

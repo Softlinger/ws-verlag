@@ -9,3 +9,5 @@ ws_verlag.db
 .env
 dist/
 build/
+backups/
+update-signal/

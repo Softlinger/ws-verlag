@@ -17,5 +17,14 @@ class Settings(BaseSettings):
     app_name: str = "WS-Verlag Verwaltung"
     port: int = 8000
 
+    # Update-Check gegen das Auslieferungsverzeichnis auf der Website.
+    update_manifest_url: str = "https://www.weidlinger-soft.at/apps/ws-verlag/version.json"
+    update_check_interval_hours: int = 24
+    update_check_enabled: bool = True
+
+    # Nur relevant im Docker-/NAS-Betrieb: Verzeichnis, ueber das die App dem separaten,
+    # privilegierten Updater-Container ein Update-Signal uebergibt (gemeinsames Volume).
+    update_signal_dir: str = "/update-signal"
+
 
 settings = Settings()

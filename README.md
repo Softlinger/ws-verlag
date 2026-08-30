@@ -56,16 +56,27 @@ Getestet werden insbesondere die steuerlich kritische Logik (Berechnung 10 %/20 
 Reverse-Charge, Werbesteuer) und die Nummernkreis-Logik (fortlaufende, konfigurierbare
 Belegnummern).
 
-## Produktivbetrieb mit MariaDB
+## Produktivbetrieb (Synology NAS, Docker, automatische Updates)
 
-`DATABASE_URL` in `.env` setzen, z. B.:
+Siehe **[README-DEPLOYMENT.md](README-DEPLOYMENT.md)** — Docker-Setup mit MariaDB und
+automatischem Update-Mechanismus (Backup, Container-Austausch, Health-Check, Rollback).
+
+Für einen einfachen MariaDB-Betrieb ohne Docker/Updater genügt es, `DATABASE_URL` in `.env`
+zu setzen, z. B.:
 
 ```
 DATABASE_URL=mysql+pymysql://ws_verlag_user:CHANGE_ME@localhost:3306/ws_verlag
 ```
 
-Datenbank und Benutzer vorher in MariaDB anlegen. Tabellen werden beim Start automatisch erzeugt
-(`Base.metadata.create_all`); für spätere Schemaänderungen ist Alembic (`alembic/`) vorbereitet.
+Tabellen werden beim Start automatisch erzeugt (`Base.metadata.create_all`); für spätere
+Schemaänderungen ist Alembic (`alembic/`) vorbereitet.
+
+## Update-Funktion
+
+Die App prüft (beim Admin-Login sowie periodisch alle 24h) das Manifest unter
+`https://www.weidlinger-soft.at/apps/ws-verlag/version.json` auf eine neuere Version und
+fragt bei Verfügbarkeit im Dashboard/unter „Updates“ nach Bestätigung, bevor irgendetwas
+installiert wird. Format des Manifests: [docs/update-manifest-format.md](docs/update-manifest-format.md).
 
 ## Rollen
 

@@ -131,6 +131,10 @@ def wait_for_healthy() -> bool:
 
 
 def rollback() -> None:
+    """Setzt den zuvor umbenannten, noch laufenden/gestoppten alten Container wieder als
+    ws-verlag-app ein. Wird NUR aufgerufen, wenn recreate_container() tatsaechlich
+    ausgefuehrt wurde (siehe process_request) - sonst wuerde ein noch unveraenderter,
+    gesunder App-Container faelschlich als 'fehlgeschlagenes Update' entfernt."""
     try:
         failed = client.containers.get(APP_CONTAINER_NAME)
         failed.stop(timeout=10)
@@ -160,9 +164,15 @@ def process_request(payload: dict) -> None:
     log(f"Update auf Version {target_version} angefordert ({image_ref}@{image_digest}).")
     report("wird_installiert", f"Installation von Version {target_version} laeuft.")
 
+    container_swapped = False
     try:
         create_backup()
         new_image_id = pull_new_image(image_ref, image_digest)
+
+        # Ab hier wird der laufende Container tatsaechlich angefasst - erst jetzt darf im
+        # Fehlerfall ein Rollback ausgeloest werden. Schlaegt Backup oder Pull VORHER fehl,
+        # laeuft der bisherige, unveraenderte Container einfach unbeeinflusst weiter.
+        container_swapped = True
         recreate_container(new_image_id)
 
         if wait_for_healthy():
@@ -173,8 +183,13 @@ def process_request(payload: dict) -> None:
             rollback()
             report("zurueckgerollt", "Health-Check nach Update fehlgeschlagen - automatisch zurueckgesetzt.")
 
-    except Exception as exc:  # noqa: BLE001 - jeder Fehler muss zu einem gemeldeten Rollback fuehren
+    except Exception as exc:  # noqa: BLE001 - jeder Fehler muss zu einem gemeldeten Ergebnis fuehren
         log(f"Fehler beim Update: {exc}")
+        if not container_swapped:
+            # Der bisherige Container wurde nicht angefasst (Backup/Pull schlugen vorher fehl) -
+            # kein Rollback noetig, die App laeuft unveraendert weiter.
+            report("fehlgeschlagen", f"Installation abgebrochen, App laeuft unveraendert weiter: {exc}"[:500])
+            return
         try:
             rollback()
             report("zurueckgerollt", f"Fehler waehrend Installation, zurueckgesetzt: {exc}"[:500])

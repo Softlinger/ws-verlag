@@ -75,6 +75,24 @@ Compose-Projekt-Labels — `docker compose up -d` funktioniert danach weiterhin 
 aber ein `docker compose down` sollte in der Praxis mit `docker ps -a` gegengeprüft werden,
 falls der App-Container danach nicht mit entfernt wurde.
 
+## Bugfix nach Live-Test gegen die echte Website (2026-08-30)
+
+Beim ersten Check gegen `https://www.weidlinger-soft.at/apps/ws-verlag/version.json`
+stellte sich heraus, dass dort noch das Platzhalter-Beispiel aus
+`docs/update-manifest-format.md` liegt (Version 1.1.0, ungültiger Digest `sha256:3a1b...c9`).
+**Das muss durch ein echtes Release oder eine version.json mit `version: "0.1.0"` (=
+aktuell installierte Version, zeigt dann kein Update an) ersetzt werden, bevor Kunden-
+Instanzen produktiv gegen diese URL prüfen.**
+
+Dabei wurde ein echter Fehler im Updater gefunden und behoben: Schlug `create_backup()`
+oder `pull_new_image()` fehl (z. B. wegen eines ungültigen Digests wie im Platzhalter),
+löste der `except`-Block trotzdem `rollback()` aus — das hätte den noch unveränderten,
+gesunden laufenden App-Container fälschlich gestoppt und entfernt, obwohl der eigentliche
+Container-Austausch nie stattgefunden hatte. `updater.py` verfolgt jetzt explizit, ob der
+Container-Austausch bereits begonnen hat (`container_swapped`), und ruft `rollback()` nur
+noch auf, wenn das der Fall ist. Schlägt Backup/Pull vorher fehl, läuft die App unverändert
+weiter und es wird lediglich `fehlgeschlagen` gemeldet.
+
 ## Bekannte Grenzen
 
 - Datenbankschema-Änderungen zwischen Versionen werden aktuell nur additiv über

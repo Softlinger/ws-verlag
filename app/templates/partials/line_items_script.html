@@ -1,12 +1,35 @@
 <script>
 (function () {
+  const table = document.getElementById('items-table');
+  if (!table) return;
+  const tbody = table.querySelector('tbody');
+
   const addBtn = document.getElementById('add-item-row');
-  const table = document.getElementById('items-table').querySelector('tbody');
-  if (!addBtn) return;
-  addBtn.addEventListener('click', function () {
-    const row = table.rows[0].cloneNode(true);
-    row.querySelectorAll('input, select').forEach(function (el) { el.value = el.dataset.default || ''; });
-    table.appendChild(row);
+  if (addBtn) {
+    addBtn.addEventListener('click', function () {
+      const row = tbody.rows[0].cloneNode(true);
+      row.querySelectorAll('input, select').forEach(function (el) { el.value = el.dataset.default || ''; });
+      tbody.appendChild(row);
+    });
+  }
+
+  // Bei Artikelauswahl Bezeichnung, Einzelpreis und MwSt.-Satz automatisch aus dem
+  // Artikelstamm in die Positionszeile uebernehmen.
+  tbody.addEventListener('change', function (event) {
+    const select = event.target;
+    if (!select.matches('select[name="article_id"]')) return;
+
+    const option = select.options[select.selectedIndex];
+    const row = select.closest('tr');
+    if (!option || !option.value) return;
+
+    const descriptionInput = row.querySelector('input[name="description"]');
+    const priceInput = row.querySelector('input[name="unit_price"]');
+    const vatSelect = row.querySelector('select[name="vat_rate"]');
+
+    if (descriptionInput && option.dataset.name) descriptionInput.value = option.dataset.name;
+    if (priceInput && option.dataset.price) priceInput.value = option.dataset.price;
+    if (vatSelect && option.dataset.vat) vatSelect.value = option.dataset.vat;
   });
 })();
 </script>

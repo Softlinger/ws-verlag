@@ -31,7 +31,7 @@
             <select name="article_id">
               <option value="">-</option>
               {% for article in articles %}
-              <option value="{{ article.id }}" data-price="{{ article.unit_price }}" data-vat="{{ article.vat_rate }}">{{ article.name }}</option>
+              <option value="{{ article.id }}" data-name="{{ article.name }}" data-price="{{ article.unit_price }}" data-vat="{{ article.vat_rate }}">{{ article.name }}</option>
               {% endfor %}
             </select>
           </td>

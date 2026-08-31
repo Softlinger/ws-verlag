@@ -10,7 +10,20 @@ from app.auth import get_current_user, require_login
 from app.config import settings
 from app.database import Base, SessionLocal, engine, ensure_new_columns, get_db
 from app.models import Invoice, InvoiceStatus, User
-from app.routers import articles, auth, company, credit_notes, customers, dunning, help, invoices, orders, updates, users
+from app.routers import (
+    account,
+    articles,
+    auth,
+    company,
+    credit_notes,
+    customers,
+    dunning,
+    help,
+    invoices,
+    orders,
+    updates,
+    users,
+)
 from app.services.update_check import check_for_update
 from app.templating import templates
 from app.version import __version__
@@ -84,6 +97,7 @@ app.include_router(company.router)
 app.include_router(users.router)
 app.include_router(updates.router)
 app.include_router(help.router)
+app.include_router(account.router)
 
 
 @app.get("/")

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Gesendete Mails - WS-Verlag Verwaltung{% endblock %}
+{% block content %}
+<h1>Gesendete Mails</h1>
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Datum</th>
+        <th scope="col">Typ</th>
+        <th scope="col">Empf&auml;nger</th>
+        <th scope="col">Betreff</th>
+        <th scope="col">Status</th>
+        <th scope="col">Aktion</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      {% set entry = row.entry %}
+      <tr>
+        <td>{{ entry.sent_at.strftime('%d.%m.%Y %H:%M') }}</td>
+        <td>{{ row.type_label }}</td>
+        <td>{{ entry.recipient }}</td>
+        <td>{{ entry.subject }}</td>
+        <td>
+          <span class="status-badge {{ 'status-bezahlt' if entry.status.value == 'gesendet' else 'status-offen' }}">
+            {{ entry.status.value }}
+          </span>
+          {% if entry.status.value == 'fehlgeschlagen' and entry.error_message %}
+          <br><small>{{ entry.error_message }}</small>
+          {% endif %}
+        </td>
+        <td>
+          {% if row.detail_url %}<a href="{{ row.detail_url }}">Beleg ansehen</a>{% endif %}
+          {% if row.resend_url %}
+          <form style="display:inline" method="post" action="{{ row.resend_url }}">
+            <button type="submit" class="secondary">Erneut senden</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">Noch keine E-Mails versendet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

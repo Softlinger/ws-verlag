@@ -20,6 +20,7 @@ from app.routers import (
     dunning,
     help,
     invoices,
+    mail_log,
     orders,
     updates,
     users,
@@ -98,6 +99,7 @@ app.include_router(users.router)
 app.include_router(updates.router)
 app.include_router(help.router)
 app.include_router(account.router)
+app.include_router(mail_log.router)
 
 
 @app.get("/")

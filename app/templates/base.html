@@ -13,17 +13,26 @@
     {% if request.state.user %}
     <nav aria-label="Hauptnavigation">
       <ul>
-        <li><a href="/customers">Kunden</a></li>
-        <li><a href="/articles">Artikel</a></li>
         <li><a href="/orders">Auftr&auml;ge</a></li>
         <li><a href="/invoices">Rechnungen</a></li>
         <li><a href="/credit-notes">Gutschriften</a></li>
         <li><a href="/dunning">Mahnwesen</a></li>
-        <li><a href="/mail-log">Mails</a></li>
+        <li><a href="/customers">Kunden</a></li>
+        <li><a href="/articles">Artikel</a></li>
         {% if request.state.user.role.value == "admin" %}
         <li><a href="/company">Firma</a></li>
-        <li><a href="/users">Benutzer</a></li>
-        <li><a href="/updates">Updates</a></li>
+        <li>
+          <details class="help-menu">
+            <summary>Einstellungen</summary>
+            <ul>
+              <li><a href="/mail-log">Mails</a></li>
+              <li><a href="/users">Benutzer</a></li>
+              <li><a href="/updates">Updates</a></li>
+            </ul>
+          </details>
+        </li>
+        {% else %}
+        <li><a href="/mail-log">Mails</a></li>
         {% endif %}
         <li>
           <details class="help-menu">

@@ -68,6 +68,9 @@ def download_dunning_pdf(dunning_id: int, db: Session = Depends(get_db), user: U
 @router.post("/{dunning_id}/send")
 def send_dunning_mail(dunning_id: int, db: Session = Depends(get_db), user: User = Depends(require_login)):
     dunning = db.get(Dunning, dunning_id)
+    if not dunning.invoice.customer.email.strip():
+        return RedirectResponse(f"/invoices/{dunning.invoice.id}?error=no_email", status_code=303)
+
     company = get_or_create_company(db)
     pdf_bytes = render_dunning_pdf(company=company, dunning=dunning, invoice=dunning.invoice, customer=dunning.invoice.customer)
     send_document_mail(

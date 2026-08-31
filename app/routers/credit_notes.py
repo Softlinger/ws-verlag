@@ -95,6 +95,9 @@ def download_credit_note_pdf(credit_note_id: int, db: Session = Depends(get_db),
 @router.post("/{credit_note_id}/send")
 def send_credit_note_mail(credit_note_id: int, db: Session = Depends(get_db), user: User = Depends(require_login)):
     credit_note = db.get(CreditNote, credit_note_id)
+    if not credit_note.invoice.customer.email.strip():
+        return RedirectResponse(f"/credit-notes/{credit_note.id}?error=no_email", status_code=303)
+
     company = get_or_create_company(db)
     totals = calculate_totals(credit_note.items)
     pdf_bytes = render_credit_note_pdf(

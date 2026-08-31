@@ -148,6 +148,9 @@ def download_invoice_pdf(invoice_id: int, db: Session = Depends(get_db), user: U
 @router.post("/{invoice_id}/send")
 def send_invoice_mail(invoice_id: int, db: Session = Depends(get_db), user: User = Depends(require_login)):
     invoice = db.get(Invoice, invoice_id)
+    if not invoice.customer.email.strip():
+        return RedirectResponse(f"/invoices/{invoice.id}?error=no_email", status_code=303)
+
     company = get_or_create_company(db)
     totals = _build_totals(invoice)
     pdf_bytes = render_invoice_pdf(

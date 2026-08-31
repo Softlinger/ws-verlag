@@ -115,6 +115,9 @@ def download_order_pdf(order_id: int, db: Session = Depends(get_db), user: User 
 @router.post("/{order_id}/send")
 def send_order_mail(order_id: int, db: Session = Depends(get_db), user: User = Depends(require_login)):
     order = db.get(Order, order_id)
+    if not order.customer.email.strip():
+        return RedirectResponse(f"/orders/{order.id}?error=no_email", status_code=303)
+
     company = get_or_create_company(db)
     totals = calculate_totals(
         order.items,

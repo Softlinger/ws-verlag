@@ -2,6 +2,11 @@
 {% block title %}Rechnung {{ invoice.number }} - WS-Verlag Verwaltung{% endblock %}
 {% block content %}
 <h1>Rechnung {{ invoice.number }} <span class="status-badge status-{{ invoice.status.value }}">{{ invoice.status.value }}</span></h1>
+
+{% if request.query_params.get("error") == "no_email" %}
+<p class="error-message" role="alert">Versand nicht m&ouml;glich: F&uuml;r diesen Kunden ist keine E-Mail-Adresse hinterlegt.</p>
+{% endif %}
+
 <div class="card">
   <p>Kunde: <strong>{{ invoice.customer.name }}</strong>{% if invoice.reverse_charge %} <em>(Reverse-Charge)</em>{% endif %}</p>
   <p>Rechnungsdatum: {{ invoice.invoice_date.strftime('%d.%m.%Y') }} &mdash; F&auml;llig: {{ invoice.due_date.strftime('%d.%m.%Y') }}</p>
@@ -39,8 +44,9 @@
   <p>
     <a class="btn" href="/invoices/{{ invoice.id }}/pdf" target="_blank">PDF ansehen</a>
     <form style="display:inline" method="post" action="/invoices/{{ invoice.id }}/send">
-      <button type="submit" class="secondary">Per E-Mail senden</button>
+      <button type="submit" class="secondary" {{ "disabled" if not invoice.customer.email.strip() else "" }}>Per E-Mail senden</button>
     </form>
+    {% if not invoice.customer.email.strip() %}<span> (Kunde hat keine E-Mail-Adresse)</span>{% endif %}
     <a class="btn secondary" href="/credit-notes/new?invoice_id={{ invoice.id }}">Gutschrift erstellen</a>
     <form style="display:inline" method="post" action="/dunning/{{ invoice.id }}/create">
       <button type="submit" class="secondary">Mahnung erstellen</button>
@@ -87,7 +93,7 @@
         <td>
           <a href="/dunning/{{ dunning.id }}/pdf" target="_blank">PDF</a>
           <form style="display:inline" method="post" action="/dunning/{{ dunning.id }}/send">
-            <button type="submit" class="secondary">Senden</button>
+            <button type="submit" class="secondary" {{ "disabled" if not invoice.customer.email.strip() else "" }}>Senden</button>
           </form>
         </td>
       </tr>

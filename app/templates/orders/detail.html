@@ -6,6 +6,9 @@
 {% if error == "has_invoices" %}
 <p class="error-message" role="alert">Dieser Auftrag kann nicht gel&ouml;scht werden, da bereits eine Rechnung dazu existiert.</p>
 {% endif %}
+{% if request.query_params.get("error") == "no_email" %}
+<p class="error-message" role="alert">Versand nicht m&ouml;glich: F&uuml;r diesen Kunden ist keine E-Mail-Adresse hinterlegt.</p>
+{% endif %}
 
 <div class="card">
   <p>Kunde: <strong>{{ order.customer.name }}</strong>{% if order.customer.reverse_charge_applicable %} <em>(Reverse-Charge)</em>{% endif %}</p>
@@ -43,8 +46,9 @@
   <p>
     <a class="btn" href="/orders/{{ order.id }}/pdf" target="_blank">PDF ansehen</a>
     <form style="display:inline" method="post" action="/orders/{{ order.id }}/send">
-      <button type="submit" class="secondary">Per E-Mail senden</button>
+      <button type="submit" class="secondary" {{ "disabled" if not order.customer.email.strip() else "" }}>Per E-Mail senden</button>
     </form>
+    {% if not order.customer.email.strip() %}<span> (Kunde hat keine E-Mail-Adresse)</span>{% endif %}
     <a class="btn secondary" href="/orders/{{ order.id }}/edit">&Auml;ndern</a>
     <a class="btn" href="/invoices/new?order_id={{ order.id }}">Rechnung aus Auftrag erstellen</a>
   </p>

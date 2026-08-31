@@ -76,6 +76,34 @@ header.app-header nav ul { list-style: none; display: flex; gap: 1.25rem; margin
 
 main { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
 
+.settings-subnav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  margin: -1.5rem -1.5rem 1.5rem;
+  padding: 0.75rem 1.5rem;
+}
+.settings-subnav ul {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin: 0;
+  padding: 0;
+}
+.settings-subnav a {
+  text-decoration: none;
+  font-weight: 600;
+  padding: 0.25rem 0.4rem;
+}
+.settings-subnav a:hover, .settings-subnav a:focus { text-decoration: underline; }
+
+#logo, #allgemein, #bankkonten, #zahlungsbedingungen, #belegnummernkreise, #mahnstufen {
+  scroll-margin-top: 4.5rem;
+}
+
 .card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);

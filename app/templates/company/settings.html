@@ -3,24 +3,35 @@
 {% block content %}
 <h1>Firmenstammdaten</h1>
 
+<nav aria-label="Firmenstammdaten-Bereiche" class="settings-subnav">
+  <ul>
+    <li><a href="#logo">Firmenlogo</a></li>
+    <li><a href="#allgemein">Allgemein &amp; SMTP</a></li>
+    <li><a href="#bankkonten">Bankkonten</a></li>
+    <li><a href="#zahlungsbedingungen">Zahlungsbedingungen</a></li>
+    <li><a href="#belegnummernkreise">Belegnummernkreise</a></li>
+    <li><a href="#mahnstufen">Mahnstufen</a></li>
+  </ul>
+</nav>
+
 {% if request.query_params.get("error") == "logo_type" %}
 <p class="error-message" role="alert">Ung&uuml;ltiges Dateiformat - bitte eine JPG-Datei hochladen.</p>
 {% endif %}
 
-<div class="card">
+<div class="card" id="logo">
   <h2>Firmenlogo</h2>
   <p>Wird auf Auftrag/Rechnung/Gutschrift oben rechts gedruckt (90&times;50&nbsp;mm), als JPG.</p>
   {% if company.logo_path %}
   <p><img src="/static/{{ company.logo_path }}" alt="Aktuelles Firmenlogo" style="max-width: 270px; max-height: 150px;"></p>
   {% endif %}
   <form method="post" action="/company/logo" enctype="multipart/form-data">
-    <label for="logo">Logo-Datei (JPG)</label>
-    <input id="logo" name="logo" type="file" accept=".jpg,.jpeg" required>
+    <label for="logo_file">Logo-Datei (JPG)</label>
+    <input id="logo_file" name="logo" type="file" accept=".jpg,.jpeg" required>
     <p><button type="submit" style="margin-top: 1rem;">Hochladen</button></p>
   </form>
 </div>
 
-<div class="card">
+<div class="card" id="allgemein">
   <h2>Allgemein & SMTP</h2>
   <form method="post" action="/company/update">
     <label for="name">Firmenname</label>
@@ -68,7 +79,7 @@
   </form>
 </div>
 
-<div class="card">
+<div class="card" id="bankkonten">
   <h2>Bankkonten</h2>
   <table>
     <thead><tr><th scope="col">Label</th><th scope="col">IBAN</th><th scope="col">BIC</th><th scope="col">Bank</th><th scope="col">Standard</th><th scope="col">Aktion</th></tr></thead>
@@ -103,7 +114,7 @@
   </form>
 </div>
 
-<div class="card">
+<div class="card" id="zahlungsbedingungen">
   <h2>Zahlungsbedingungen</h2>
   <table>
     <thead><tr><th scope="col">Name</th><th scope="col">Frist (Tage)</th><th scope="col">Standard</th><th scope="col">Aktion</th></tr></thead>
@@ -133,7 +144,7 @@
   </form>
 </div>
 
-<div class="card">
+<div class="card" id="belegnummernkreise">
   <h2>Belegnummernkreise</h2>
   {% for number_range in number_ranges %}
   <form method="post" action="/company/number-ranges/{{ number_range.id }}/update">
@@ -152,7 +163,7 @@
   {% endfor %}
 </div>
 
-<div class="card">
+<div class="card" id="mahnstufen">
   <h2>Mahnstufen</h2>
   {% for level in dunning_levels %}
   <form method="post" action="/company/dunning-levels/{{ level.id }}/update">

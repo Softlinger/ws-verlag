@@ -66,10 +66,12 @@
     <input id="smtp_username" name="smtp_username" value="{{ company.smtp_username }}">
     <label for="smtp_password">SMTP-Passwort (leer lassen = unver&auml;ndert)</label>
     <input id="smtp_password" name="smtp_password" type="password" autocomplete="new-password">
-    <label for="smtp_use_tls">
-      <input id="smtp_use_tls" name="smtp_use_tls" type="checkbox" style="width:auto; display:inline-block;" {{ "checked" if company.smtp_use_tls else "" }}>
-      STARTTLS verwenden
-    </label>
+    <label for="smtp_encryption">Verschl&uuml;sselung</label>
+    <select id="smtp_encryption" name="smtp_encryption">
+      <option value="starttls" {{ "selected" if company.smtp_encryption == "starttls" else "" }}>STARTTLS (meist Port 587)</option>
+      <option value="ssl" {{ "selected" if company.smtp_encryption == "ssl" else "" }}>SSL/TLS (meist Port 465)</option>
+      <option value="none" {{ "selected" if company.smtp_encryption == "none" else "" }}>Keine (nicht empfohlen)</option>
+    </select>
     <label for="smtp_from_address">Absenderadresse</label>
     <input id="smtp_from_address" name="smtp_from_address" type="email" value="{{ company.smtp_from_address }}">
     <label for="smtp_from_name">Absendername</label>

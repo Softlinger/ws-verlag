@@ -87,7 +87,8 @@ class Company(Base):
     smtp_port: Mapped[int] = mapped_column(default=587)
     smtp_username: Mapped[str] = mapped_column(String(255), default="")
     smtp_password: Mapped[str] = mapped_column(String(255), default="")
-    smtp_use_tls: Mapped[bool] = mapped_column(Boolean, default=True)
+    # "none" | "starttls" (explizit, meist Port 587) | "ssl" (implizit, meist Port 465)
+    smtp_encryption: Mapped[str] = mapped_column(String(16), default="starttls")
     smtp_from_address: Mapped[str] = mapped_column(String(255), default="")
     smtp_from_name: Mapped[str] = mapped_column(String(255), default="")
 

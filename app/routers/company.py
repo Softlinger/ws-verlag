@@ -80,7 +80,7 @@ def update_company(
     smtp_port: int = Form(587),
     smtp_username: str = Form(""),
     smtp_password: str = Form(""),
-    smtp_use_tls: bool = Form(False),
+    smtp_encryption: str = Form("starttls"),
     smtp_from_address: str = Form(""),
     smtp_from_name: str = Form(""),
     advertising_tax_rate: Decimal = Form(Decimal("5.00")),
@@ -101,7 +101,7 @@ def update_company(
     company.smtp_username = smtp_username
     if smtp_password:
         company.smtp_password = smtp_password
-    company.smtp_use_tls = smtp_use_tls
+    company.smtp_encryption = smtp_encryption if smtp_encryption in ("none", "starttls", "ssl") else "starttls"
     company.smtp_from_address = smtp_from_address
     company.smtp_from_name = smtp_from_name
     company.advertising_tax_rate = advertising_tax_rate

@@ -1,9 +1,27 @@
 import smtplib
+import ssl
 from email.message import EmailMessage
 
 from sqlalchemy.orm import Session
 
 from app.models import Company, MailLog, MailStatus
+
+
+def _connect(company: Company) -> smtplib.SMTP:
+    """Baut die SMTP-Verbindung passend zur konfigurierten Verschluesselungsart auf.
+
+    - "ssl": implizites TLS von Anfang an (SMTP_SSL, ueblicherweise Port 465).
+    - "starttls": Verbindung im Klartext aufgebaut, dann per STARTTLS auf TLS
+      umgestellt (ueblicherweise Port 587).
+    - "none": unverschluesselt - nur fuer interne/Test-SMTP-Server sinnvoll.
+    """
+    if company.smtp_encryption == "ssl":
+        return smtplib.SMTP_SSL(company.smtp_host, company.smtp_port, timeout=15, context=ssl.create_default_context())
+
+    server = smtplib.SMTP(company.smtp_host, company.smtp_port, timeout=15)
+    if company.smtp_encryption == "starttls":
+        server.starttls(context=ssl.create_default_context())
+    return server
 
 
 def send_document_mail(
@@ -32,9 +50,7 @@ def send_document_mail(
     try:
         if not company.smtp_host:
             raise RuntimeError("Kein SMTP-Server in den Firmenstammdaten konfiguriert.")
-        with smtplib.SMTP(company.smtp_host, company.smtp_port, timeout=15) as server:
-            if company.smtp_use_tls:
-                server.starttls()
+        with _connect(company) as server:
             if company.smtp_username:
                 server.login(company.smtp_username, company.smtp_password)
             server.send_message(msg)

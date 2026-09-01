@@ -12,7 +12,7 @@ Sicherheits-/Datenschutzanforderungen an diesen Bereich der Website selbst).
   "version": "1.1.0",
   "release_date": "2026-09-15",
   "changelog": "- Neue Funktion X\n- Fehlerbehebung Y",
-  "image": "ghcr.io/weidlingersoft/ws-verlag",
+  "image": "ghcr.io/Softlinger/ws-verlag",
   "image_digest": "sha256:3a1b...c9",
   "min_upgrade_from": "1.0.0"
 }
@@ -23,7 +23,7 @@ Sicherheits-/Datenschutzanforderungen an diesen Bereich der Website selbst).
 | `version` | ja | SemVer-Versionsnummer der neuen Version (`MAJOR.MINOR.PATCH`). Wird per `packaging.version` mit der installierten Version verglichen — nur bei echtem Anstieg wird ein Update angezeigt. |
 | `release_date` | nein | Anzeige-Datum, beliebiges Format (nur Text, keine Berechnung). |
 | `changelog` | nein | Freitext, wird 1:1 in der App angezeigt (kein HTML — wird als reiner Text gerendert). |
-| `image` | ja | Vollständige Docker-Image-Referenz ohne Tag/Digest, z. B. `ghcr.io/weidlingersoft/ws-verlag`. |
+| `image` | ja | Vollständige Docker-Image-Referenz ohne Tag/Digest, z. B. `ghcr.io/Softlinger/ws-verlag`. |
 | `image_digest` | ja | Inhaltsadressierter SHA-256-Digest des Images (`docker inspect --format '{{.RepoDigests}}'` nach dem Build). Der Updater pullt ausschließlich per `<image>@<digest>` — Docker verifiziert die Integrität dabei selbst. |
 | `min_upgrade_from` | nein | Informativ, aktuell nicht ausgewertet. Vorgesehen für künftige Sprünge, die eine Zwischenversion erfordern. |
 

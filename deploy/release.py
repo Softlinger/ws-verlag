@@ -115,7 +115,7 @@ def docker_push(image: str, new_version: str) -> None:
 def _parse_digest(inspect_output: str) -> str | None:
     """Extrahiert den sha256-Digest aus der Ausgabe von
     'docker inspect --format={{index .RepoDigests 0}}', z. B.
-    'ghcr.io/weidlingersoft/ws-verlag@sha256:abc...' -> 'sha256:abc...'."""
+    'ghcr.io/Softlinger/ws-verlag@sha256:abc...' -> 'sha256:abc...'."""
     output = inspect_output.strip()
     if "@sha256:" not in output:
         return None
@@ -182,7 +182,7 @@ def read_current_image() -> str:
             return json.loads(VERSION_JSON.read_text(encoding="utf-8"))["image"]
         except (KeyError, json.JSONDecodeError):
             pass
-    return "ghcr.io/weidlingersoft/ws-verlag"
+    return "ghcr.io/Softlinger/ws-verlag"
 
 
 def main() -> None:

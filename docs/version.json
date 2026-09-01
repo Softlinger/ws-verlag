@@ -2,7 +2,7 @@
   "version": "0.1.0",
   "release_date": "2026-09-15",
   "changelog": "",
-  "image": "ghcr.io/weidlingersoft/ws-verlag",
+  "image": "ghcr.io/Softlinger/ws-verlag",
   "image_digest": "",
   "min_upgrade_from": "0.0.0"
 }

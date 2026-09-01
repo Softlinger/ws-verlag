@@ -15,6 +15,8 @@ from app.models import (
     Invoice,
     InvoiceItem,
     InvoiceStatus,
+    MailLog,
+    MailStatus,
     Order,
     PaymentTerm,
     User,
@@ -22,6 +24,7 @@ from app.models import (
 from app.routers.company import get_or_create_company
 from app.services.mailer import send_document_mail
 from app.services.numbering import generate_next_number
+from app.services.payments import record_payment
 from app.services.pdf import render_invoice_pdf
 from app.services.tax import calculate_totals
 from app.templating import templates
@@ -35,6 +38,22 @@ def _build_totals(invoice: Invoice):
         reverse_charge=invoice.reverse_charge,
         advertising_tax_applicable=invoice.advertising_tax_applicable,
         advertising_tax_rate=invoice.advertising_tax_rate,
+    )
+
+
+def _invoice_is_sent(db: Session, invoice_id: int) -> bool:
+    """Eine Rechnung gilt als versendet, sobald mindestens eine E-Mail dazu
+    erfolgreich verschickt wurde (MailLog-Status GESENDET). Danach ist der
+    Beleg beim Kunden und darf nicht mehr inhaltlich veraendert werden."""
+    return (
+        db.query(MailLog)
+        .filter(
+            MailLog.related_type == "invoice",
+            MailLog.related_id == invoice_id,
+            MailLog.status == MailStatus.GESENDET,
+        )
+        .count()
+        > 0
     )
 
 
@@ -59,6 +78,7 @@ def new_invoice_form(
         request,
         "invoices/form.html",
         {
+            "invoice": None,
             "order": order,
             "customers": db.query(Customer).filter(Customer.active.is_(True)).order_by(Customer.name).all(),
             "articles": db.query(Article).filter(Article.active.is_(True)).order_by(Article.name).all(),
@@ -126,8 +146,80 @@ def view_invoice(invoice_id: int, request: Request, db: Session = Depends(get_db
     return templates.TemplateResponse(
         request,
         "invoices/detail.html",
-        {"invoice": invoice, "totals": totals, "paid_total": paid_total, "open_amount": totals.gross_total - paid_total},
+        {
+            "invoice": invoice,
+            "totals": totals,
+            "paid_total": paid_total,
+            "open_amount": totals.gross_total - paid_total,
+            "is_sent": _invoice_is_sent(db, invoice.id),
+        },
     )
+
+
+@router.get("/{invoice_id}/edit")
+def edit_invoice_form(invoice_id: int, request: Request, db: Session = Depends(get_db), user: User = Depends(require_login)):
+    invoice = db.get(Invoice, invoice_id)
+    if _invoice_is_sent(db, invoice.id):
+        return RedirectResponse(f"/invoices/{invoice.id}?error=already_sent", status_code=303)
+    return templates.TemplateResponse(
+        request,
+        "invoices/form.html",
+        {
+            "invoice": invoice,
+            "order": None,
+            "customers": db.query(Customer).filter(Customer.active.is_(True)).order_by(Customer.name).all(),
+            "articles": db.query(Article).filter(Article.active.is_(True)).order_by(Article.name).all(),
+            "bank_accounts": db.query(BankAccount).all(),
+        },
+    )
+
+
+@router.post("/{invoice_id}/edit")
+def update_invoice(
+    invoice_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_login),
+    customer_id: int = Form(...),
+    invoice_date: date = Form(...),
+    advertising_tax_applicable: bool = Form(False),
+    bank_account_id: str = Form(""),
+    article_id: list[str] = Form(default=[]),
+    description: list[str] = Form(default=[]),
+    quantity: list[Decimal] = Form(default=[]),
+    unit_price: list[Decimal] = Form(default=[]),
+    vat_rate: list[int] = Form(default=[]),
+):
+    invoice = db.get(Invoice, invoice_id)
+    if _invoice_is_sent(db, invoice.id):
+        return RedirectResponse(f"/invoices/{invoice.id}?error=already_sent", status_code=303)
+
+    customer = db.get(Customer, customer_id)
+    payment_term_days = customer.payment_term.days_due if customer.payment_term else 14
+
+    invoice.customer_id = customer_id
+    invoice.invoice_date = invoice_date
+    invoice.due_date = invoice_date + timedelta(days=payment_term_days)
+    invoice.reverse_charge = customer.reverse_charge_applicable
+    invoice.advertising_tax_applicable = advertising_tax_applicable
+    invoice.bank_account_id = int(bank_account_id) if bank_account_id else customer.bank_account_id
+
+    invoice.items.clear()
+    db.flush()
+    for idx, desc in enumerate(description):
+        if not desc.strip():
+            continue
+        invoice.items.append(
+            InvoiceItem(
+                article_id=int(article_id[idx]) if idx < len(article_id) and article_id[idx] else None,
+                description=desc,
+                quantity=quantity[idx] if idx < len(quantity) else Decimal("1"),
+                unit_price=unit_price[idx] if idx < len(unit_price) else Decimal("0.00"),
+                vat_rate=vat_rate[idx] if idx < len(vat_rate) else 20,
+            )
+        )
+    db.commit()
+    return RedirectResponse(f"/invoices/{invoice.id}", status_code=303)
 
 
 @router.get("/{invoice_id}/pdf")
@@ -181,24 +273,9 @@ def add_payment(
     method: str = Form("Ueberweisung"),
     note: str = Form(""),
 ):
-    from app.models import Payment
-
     invoice = db.get(Invoice, invoice_id)
-    db.add(
-        Payment(
-            invoice_id=invoice.id, amount=amount, payment_date=payment_date, method=method, note=note, created_by_id=user.id
-        )
+    record_payment(
+        db, invoice, amount=amount, payment_date=payment_date, method=method, note=note, created_by_id=user.id
     )
-    db.flush()
-
-    totals = _build_totals(invoice)
-    paid_total = sum((p.amount for p in invoice.payments), Decimal("0.00"))
-    if paid_total >= totals.gross_total:
-        invoice.status = InvoiceStatus.BEZAHLT
-    elif paid_total > 0:
-        invoice.status = InvoiceStatus.TEILBEZAHLT
-    else:
-        invoice.status = InvoiceStatus.OFFEN
-
     db.commit()
     return RedirectResponse(f"/invoices/{invoice.id}", status_code=303)

@@ -40,9 +40,12 @@ Sicherheits-/Datenschutzanforderungen an diesen Bereich der Website selbst).
 
 ## Release-Ablauf (Kurzfassung)
 
-1. Version in `app/version.py` und `pyproject.toml` hochzählen.
-2. Docker-Image bauen und in die Registry pushen (z. B. `ghcr.io/weidlingersoft/ws-verlag:1.1.0`).
-3. Digest des gepushten Images ermitteln.
-4. `version.json` auf der Website mit neuer Version, Changelog, Image-Referenz und Digest aktualisieren.
-5. Kunden-Instanzen prüfen automatisch beim nächsten Admin-Login bzw. binnen 24h und zeigen
-   die Update-Bestätigung ("Soll ich das Update installieren?") an.
+Ein Kommando deckt Versionsbump, Commit/Tag, Docker-Build/Push, Digest-Ermittlung und
+FTP-Upload von `version.json` ab (Details siehe `README-DEPLOYMENT.md`):
+
+```bash
+poetry run python deploy/release.py 1.1.0 --changelog "..."
+```
+
+Kunden-Instanzen prüfen automatisch beim nächsten Admin-Login bzw. binnen 24h und zeigen
+danach die Update-Bestätigung ("Soll ich das Update installieren?") an.

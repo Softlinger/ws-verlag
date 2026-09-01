@@ -5,6 +5,8 @@ Positionsangaben sind mm vom LINKEN und OBEREN Blattrand, A4 hochkant).
 Mahnungen (render_dunning_pdf) folgen einem eigenen, einfacheren Layout und sind
 bewusst NICHT Teil dieser 1:1-Vorlage (siehe Rueckfrage vom 2026-08-30).
 """
+import html
+import re
 from datetime import date
 from decimal import Decimal
 from io import BytesIO
@@ -14,7 +16,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
 from app.models import Company
 
@@ -25,6 +27,7 @@ PAGE_W, PAGE_H = A4  # A4 hochkant: 210 x 297 mm
 # --- Layout-Konstanten (mm vom linken/oberen Blattrand) ---------------------------
 PRINT_LEFT = 23
 PRINT_RIGHT = 187  # 210 - 23, symmetrischer Rand
+ITEMS_LINE_RIGHT_X = PRINT_RIGHT + 10  # Trennlinien der Positionstabelle: 1cm ueber den Druckrand hinaus verlaengert
 
 LOGO_X, LOGO_Y_TOP, LOGO_W, LOGO_H = 110, 35, 90, 50
 
@@ -33,17 +36,53 @@ ADDR_LEADING = 5.6
 
 DATE_X, DATE_Y_TOP, DATE_SIZE = 160, 128, 12
 
-TITLE_X, TITLE_Y_TOP, TITLE_SIZE = 23, 155, 16
+TITLE_X, TITLE_Y_TOP, TITLE_SIZE = 23, 145, 16  # 1cm nach oben (vorher 155) - Unwucht durch Leerraum vermindern
 
 ITEMS_QTY_X = 23
-ITEMS_DESC_X = 46
-ITEMS_PRICE_RIGHT_X = 160
-ITEMS_Y_TOP, ITEMS_SIZE, ITEMS_LEADING = 175, 16, 6.3
+ITEMS_QTY_COL_WIDTH = 12  # mm reservierte Breite fuer die (fettgedruckte, 16pt) Mengenangabe, bis zu 4-stellig
+ITEMS_QTY_DESC_GAP = 5  # mm Abstand zwischen Mengenspalte und Beschreibung
+ITEMS_DESC_X = ITEMS_QTY_X + ITEMS_QTY_COL_WIDTH + ITEMS_QTY_DESC_GAP  # 40
+ITEMS_DESC_RIGHT_X = 185  # Bezeichnung-Spalte: 3cm nach rechts erweitert (vorher 155)
+ITEMS_PRICE_RIGHT_X = 190  # Preisspalte: 1cm nach links korrigiert (vorher 200)
+ITEMS_DESC_GAP = 5  # mm Sicherheitsabstand zwischen umgebrochenem Positionstext und der Preisspalte.
+ITEMS_DESC_MAX_WIDTH = (ITEMS_DESC_RIGHT_X - ITEMS_DESC_X - ITEMS_DESC_GAP) * mm
+ITEMS_Y_TOP, ITEMS_SIZE, ITEMS_LEADING = 165, 16, 6.3  # 1cm nach oben (vorher 175)
+
+ITEM_DESCRIPTION_STYLE = ParagraphStyle(
+    "ItemDescription",
+    fontName="Helvetica",
+    fontSize=ITEMS_SIZE,
+    leading=ITEMS_LEADING * mm,
+)
+
+# Erlaubte Steuerzeichen fuer Positionstexte (siehe Hinweistext im Formular):
+#   \n            Zeilenumbruch
+#   **text**      fett
+#   _text_        kursiv
+#   [size=N]text[/size]   Schriftgroesse N (Punkt) fuer diesen Textteil
+_BOLD_MARKUP_RE = re.compile(r"\*\*(.+?)\*\*", re.S)
+_ITALIC_MARKUP_RE = re.compile(r"_(.+?)_", re.S)
+_SIZE_MARKUP_RE = re.compile(r"\[size=(\d+(?:\.\d+)?)\](.+?)\[/size\]", re.S)
+
+
+def _format_item_description(text: str) -> str:
+    """Wandelt die Steuerzeichen eines Positionstexts in reportlab-Paragraph-Markup um.
+    Der Text wird zuerst XML-escaped, damit vom Benutzer eingegebene < > & keine
+    ungueltigen/unerwuenschten Tags erzeugen koennen."""
+    escaped = html.escape(_safe_text(str(text)), quote=False)
+    escaped = escaped.replace("\n", "<br/>")
+    escaped = _BOLD_MARKUP_RE.sub(r"<b>\1</b>", escaped)
+    escaped = _ITALIC_MARKUP_RE.sub(r"<i>\1</i>", escaped)
+    escaped = _SIZE_MARKUP_RE.sub(r'<font size="\1">\2</font>', escaped)
+    return escaped
 
 TAX_SIZE, TAX_LEADING = 14, 5.6
 
 RC_TEXT_Y_TOP, RC_TEXT_SIZE = 243, 14
-TERMS_Y_TOP, TERMS_SIZE = 253, 14
+RC_TEXT_LEADING = 5.5  # mm Zeilenabstand innerhalb des Reverse-Charge-Texts (siehe _draw_reverse_charge_text)
+# Der Reverse-Charge-Text hat 2 Zeilen (bei RC_TEXT_Y_TOP und +1*LEADING); +1 weitere Zeile
+# Abstand danach ergibt +2*LEADING ab RC_TEXT_Y_TOP.
+TERMS_Y_TOP, TERMS_SIZE = RC_TEXT_Y_TOP + 2 * RC_TEXT_LEADING, 14
 BANK_Y_TOP, BANK_SIZE, BANK_LEADING = 273, 10, 4.2
 
 
@@ -122,29 +161,32 @@ def _draw_title(c: canvas.Canvas, title: str) -> None:
 def _draw_items(c: canvas.Canvas, items, *, reverse_charge: bool) -> float:
     """Zeichnet die Positionen und gibt die naechste freie Y-Position (mm vom oberen
     Rand) zurueck, an der die Trennlinie/Steuerzeilen weitergehen."""
-    c.setFont("Helvetica-Bold", ITEMS_SIZE)
     y_top = ITEMS_Y_TOP
-    y = _y(y_top)
 
     for item in items:
-        description_lines = str(item.description).split("\n")
-        c.drawString(ITEMS_QTY_X * mm, y, str(item.quantity))
-        c.drawString(ITEMS_DESC_X * mm, y, _safe_text(description_lines[0]))
+        y = _y(y_top)
+
+        c.setFont("Helvetica-Bold", ITEMS_SIZE)
+        c.drawString(ITEMS_QTY_X * mm, y, f"{item.quantity:.0f}")
         c.drawRightString(ITEMS_PRICE_RIGHT_X * mm, y, f"€ {item.unit_price:.2f}")
-        y_top += ITEMS_LEADING
-        y = _y(y_top)
-        for extra_line in description_lines[1:]:
-            c.drawString(ITEMS_DESC_X * mm, y, _safe_text(extra_line))
-            y_top += ITEMS_LEADING
-            y = _y(y_top)
+
+        paragraph = Paragraph(_format_item_description(item.description), ITEM_DESCRIPTION_STYLE)
+        _, height = paragraph.wrap(ITEMS_DESC_MAX_WIDTH, PAGE_H)
+        # reportlab setzt die Baseline der ersten Zeile bei (Hoehe - Schriftgroesse)
+        # unterhalb der Boxoberkante an - so landet sie auf derselben Zeile wie
+        # Menge/Preis, unabhaengig davon, wie viele Zeilen der Text danach umbricht.
+        bottom_y = y - height + ITEM_DESCRIPTION_STYLE.fontSize
+        paragraph.drawOn(c, ITEMS_DESC_X * mm, bottom_y)
+
+        n_lines = max(1, round(height / ITEM_DESCRIPTION_STYLE.leading))
+        y_top += ITEMS_LEADING * n_lines
         y_top += ITEMS_LEADING * 0.3  # kleiner Abstand zwischen Positionen
-        y = _y(y_top)
 
     return y_top
 
 
 def _draw_reverse_charge_text(c: canvas.Canvas) -> None:
-    c.setFont("Helvetica-Bold", RC_TEXT_SIZE)
+    c.setFont("Helvetica", RC_TEXT_SIZE)
     lines = [
         "Ausländische Dienstleistung daher MwSt. frei.",
         "Die Leistung unterliegt dem Reverse-Charge-System gem. § 19 Abs. 1 USTG 1994",
@@ -152,7 +194,7 @@ def _draw_reverse_charge_text(c: canvas.Canvas) -> None:
     y_top = RC_TEXT_Y_TOP
     for line in lines:
         c.drawCentredString(PAGE_W / 2, _y(y_top), line)
-        y_top += 5.5
+        y_top += RC_TEXT_LEADING
 
 
 def _draw_payment_terms(c: canvas.Canvas, text: str) -> None:
@@ -223,7 +265,7 @@ def _draw_tax_block(
     c: canvas.Canvas, *, y_top: float, totals, reverse_charge: bool, advertising_tax_applicable: bool, advertising_tax_rate: Decimal
 ) -> None:
     y = _y(y_top)
-    c.line(PRINT_LEFT * mm, y + 2 * mm, PRINT_RIGHT * mm, y + 2 * mm)
+    c.line(PRINT_LEFT * mm, y + 2 * mm, ITEMS_LINE_RIGHT_X * mm, y + 2 * mm)
     y_top += TAX_LEADING * 0.8
 
     c.setFont("Helvetica", TAX_SIZE)
@@ -241,7 +283,7 @@ def _draw_tax_block(
             y_top += TAX_LEADING
 
     y = _y(y_top)
-    c.line(PRINT_LEFT * mm, y + 2 * mm, PRINT_RIGHT * mm, y + 2 * mm)
+    c.line(PRINT_LEFT * mm, y + 2 * mm, ITEMS_LINE_RIGHT_X * mm, y + 2 * mm)
     y_top += TAX_LEADING
 
     c.setFont("Helvetica-Bold", 16)

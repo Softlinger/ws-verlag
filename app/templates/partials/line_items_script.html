@@ -27,7 +27,7 @@
     const priceInput = row.querySelector('input[name="unit_price"]');
     const vatSelect = row.querySelector('select[name="vat_rate"]');
 
-    if (descriptionInput && option.dataset.name) descriptionInput.value = option.dataset.name;
+    if (descriptionInput && option.dataset.description) descriptionInput.value = option.dataset.description;
     if (priceInput && option.dataset.price) priceInput.value = option.dataset.price;
     if (vatSelect && option.dataset.vat) vatSelect.value = option.dataset.vat;
   });

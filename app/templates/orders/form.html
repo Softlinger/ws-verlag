@@ -23,6 +23,7 @@
     <textarea id="note" name="note" rows="2">{{ order.note if order else "" }}</textarea>
 
     <h2>Positionen</h2>
+    <p class="hint">Steuerzeichen in der Bezeichnung: <code>**fett**</code>, <code>_kursiv_</code>, <code>[size=20]groß[/size]</code>, Zeilenumbruch mit Enter.</p>
     <table id="items-table">
       <thead><tr><th scope="col">Artikel</th><th scope="col">Bezeichnung</th><th scope="col">Menge</th><th scope="col">Einzelpreis</th><th scope="col">MwSt.</th></tr></thead>
       <tbody>
@@ -33,11 +34,11 @@
             <select name="article_id">
               <option value="">-</option>
               {% for article in articles %}
-              <option value="{{ article.id }}" data-name="{{ article.name }}" data-price="{{ article.unit_price }}" data-vat="{{ article.vat_rate }}" {{ "selected" if item.article_id == article.id else "" }}>{{ article.name }}</option>
+              <option value="{{ article.id }}" data-description="{{ article.description or article.name }}" data-price="{{ article.unit_price }}" data-vat="{{ article.vat_rate }}" {{ "selected" if item.article_id == article.id else "" }}>{{ article.name }}</option>
               {% endfor %}
             </select>
           </td>
-          <td><textarea name="description" rows="2">{{ item.description }}</textarea></td>
+          <td><textarea name="description" rows="4">{{ item.description }}</textarea></td>
           <td><input name="quantity" type="number" step="0.01" value="{{ item.quantity }}"></td>
           <td><input name="unit_price" type="number" step="0.01" value="{{ item.unit_price }}"></td>
           <td>
@@ -54,11 +55,11 @@
             <select name="article_id">
               <option value="">-</option>
               {% for article in articles %}
-              <option value="{{ article.id }}" data-name="{{ article.name }}" data-price="{{ article.unit_price }}" data-vat="{{ article.vat_rate }}">{{ article.name }}</option>
+              <option value="{{ article.id }}" data-description="{{ article.description or article.name }}" data-price="{{ article.unit_price }}" data-vat="{{ article.vat_rate }}">{{ article.name }}</option>
               {% endfor %}
             </select>
           </td>
-          <td><textarea name="description" rows="2"></textarea></td>
+          <td><textarea name="description" rows="4"></textarea></td>
           <td><input name="quantity" type="number" step="0.01" value="1" data-default="1"></td>
           <td><input name="unit_price" type="number" step="0.01" value="0.00" data-default="0.00"></td>
           <td>

@@ -1,49 +1,72 @@
 {% extends "base.html" %}
-{% block title %}Neue Rechnung - WS-Verlag Verwaltung{% endblock %}
+{% block title %}{{ "Rechnung bearbeiten" if invoice else "Neue Rechnung" }} - WS-Verlag Verwaltung{% endblock %}
 {% block content %}
-<h1>Neue Rechnung</h1>
+<h1>{{ "Rechnung " ~ invoice.number ~ " bearbeiten" if invoice else "Neue Rechnung" }}</h1>
 <div class="card">
-  <form method="post" action="/invoices/new">
-    {% if order %}<input type="hidden" name="order_id" value="{{ order.id }}">{% endif %}
+  <form method="post" action="{{ '/invoices/' ~ invoice.id ~ '/edit' if invoice else '/invoices/new' }}">
+    {% if order and not invoice %}<input type="hidden" name="order_id" value="{{ order.id }}">{% endif %}
     <label for="customer_id">Kunde</label>
     <select id="customer_id" name="customer_id" required>
       {% for customer in customers %}
-      <option value="{{ customer.id }}" {{ "selected" if order and order.customer_id == customer.id else "" }}>{{ customer.name }}</option>
+      <option value="{{ customer.id }}" {{ "selected" if (invoice and invoice.customer_id == customer.id) or (order and order.customer_id == customer.id) else "" }}>{{ customer.name }}</option>
       {% endfor %}
     </select>
 
     <label for="invoice_date">Rechnungsdatum</label>
-    <input id="invoice_date" name="invoice_date" type="date" required>
+    <input id="invoice_date" name="invoice_date" type="date" required value="{{ invoice.invoice_date.isoformat() if invoice else '' }}">
 
     <label for="bank_account_id">Bankkonto f&uuml;r diesen Beleg</label>
     <select id="bank_account_id" name="bank_account_id">
       <option value="">Kunden-Standard verwenden</option>
       {% for account in bank_accounts %}
-      <option value="{{ account.id }}">{{ account.label }} ({{ account.iban }})</option>
+      <option value="{{ account.id }}" {{ "selected" if invoice and invoice.bank_account_id == account.id else "" }}>{{ account.label }} ({{ account.iban }})</option>
       {% endfor %}
     </select>
 
     <label for="advertising_tax_applicable">
-      <input id="advertising_tax_applicable" name="advertising_tax_applicable" type="checkbox" style="width:auto; display:inline-block;" {{ "checked" if order and order.advertising_tax_applicable else "" }}>
+      <input id="advertising_tax_applicable" name="advertising_tax_applicable" type="checkbox" style="width:auto; display:inline-block;" {{ "checked" if (invoice and invoice.advertising_tax_applicable) or (order and order.advertising_tax_applicable) else "" }}>
       Werbesteuer (5%) zuordnen
     </label>
 
     <h2>Positionen</h2>
+    <p class="hint">Steuerzeichen in der Bezeichnung: <code>**fett**</code>, <code>_kursiv_</code>, <code>[size=20]groß[/size]</code>, Zeilenumbruch mit Enter.</p>
     <table id="items-table">
       <thead><tr><th scope="col">Artikel</th><th scope="col">Bezeichnung</th><th scope="col">Menge</th><th scope="col">Einzelpreis</th><th scope="col">MwSt.</th></tr></thead>
       <tbody>
-        {% if order and order.items %}
+        {% if invoice and invoice.items %}
+        {% for item in invoice.items %}
+        <tr>
+          <td>
+            <select name="article_id">
+              <option value="">-</option>
+              {% for article in articles %}
+              <option value="{{ article.id }}" data-description="{{ article.description or article.name }}" data-price="{{ article.unit_price }}" data-vat="{{ article.vat_rate }}" {{ "selected" if item.article_id == article.id else "" }}>{{ article.name }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td><textarea name="description" rows="4">{{ item.description }}</textarea></td>
+          <td><input name="quantity" type="number" step="0.01" value="{{ item.quantity }}"></td>
+          <td><input name="unit_price" type="number" step="0.01" value="{{ item.unit_price }}"></td>
+          <td>
+            <select name="vat_rate">
+              <option value="10" {{ "selected" if item.vat_rate == 10 else "" }}>10%</option>
+              <option value="20" {{ "selected" if item.vat_rate == 20 else "" }}>20%</option>
+            </select>
+          </td>
+        </tr>
+        {% endfor %}
+        {% elif order and order.items %}
         {% for item in order.items %}
         <tr>
           <td>
             <select name="article_id">
               <option value="">-</option>
               {% for article in articles %}
-              <option value="{{ article.id }}" data-name="{{ article.name }}" data-price="{{ article.unit_price }}" data-vat="{{ article.vat_rate }}" {{ "selected" if item.article_id == article.id else "" }}>{{ article.name }}</option>
+              <option value="{{ article.id }}" data-description="{{ article.description or article.name }}" data-price="{{ article.unit_price }}" data-vat="{{ article.vat_rate }}" {{ "selected" if item.article_id == article.id else "" }}>{{ article.name }}</option>
               {% endfor %}
             </select>
           </td>
-          <td><textarea name="description" rows="2">{{ item.description }}</textarea></td>
+          <td><textarea name="description" rows="4">{{ item.description }}</textarea></td>
           <td><input name="quantity" type="number" step="0.01" value="{{ item.quantity }}"></td>
           <td><input name="unit_price" type="number" step="0.01" value="{{ item.unit_price }}"></td>
           <td>
@@ -60,11 +83,11 @@
             <select name="article_id">
               <option value="">-</option>
               {% for article in articles %}
-              <option value="{{ article.id }}" data-name="{{ article.name }}" data-price="{{ article.unit_price }}" data-vat="{{ article.vat_rate }}">{{ article.name }}</option>
+              <option value="{{ article.id }}" data-description="{{ article.description or article.name }}" data-price="{{ article.unit_price }}" data-vat="{{ article.vat_rate }}">{{ article.name }}</option>
               {% endfor %}
             </select>
           </td>
-          <td><textarea name="description" rows="2"></textarea></td>
+          <td><textarea name="description" rows="4"></textarea></td>
           <td><input name="quantity" type="number" step="0.01" value="1" data-default="1"></td>
           <td><input name="unit_price" type="number" step="0.01" value="0.00" data-default="0.00"></td>
           <td>
@@ -79,7 +102,7 @@
     </table>
     <p><button type="button" id="add-item-row" class="secondary">+ Position hinzuf&uuml;gen</button></p>
 
-    <p><button type="submit">Rechnung anlegen</button> <a class="btn secondary" href="/invoices">Abbrechen</a></p>
+    <p><button type="submit">{{ "Speichern" if invoice else "Rechnung anlegen" }}</button> <a class="btn secondary" href="{{ '/invoices/' ~ invoice.id if invoice else '/invoices' }}">Abbrechen</a></p>
   </form>
 </div>
 {% include "partials/line_items_script.html" %}

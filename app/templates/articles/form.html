@@ -8,7 +8,8 @@
     <input id="name" name="name" required value="{{ article.name if article else '' }}">
 
     <label for="description">Beschreibung</label>
-    <textarea id="description" name="description" rows="3">{{ article.description if article else '' }}</textarea>
+    <textarea id="description" name="description" rows="5">{{ article.description if article else '' }}</textarea>
+    <p class="hint">Steuerzeichen: <code>**fett**</code>, <code>_kursiv_</code>, <code>[size=20]groß[/size]</code>, Zeilenumbruch mit Enter.</p>
 
     <label for="unit_price">Einzelpreis (netto, EUR)</label>
     <input id="unit_price" name="unit_price" type="number" step="0.01" min="0" required value="{{ article.unit_price if article else '' }}">

@@ -6,6 +6,9 @@
 {% if request.query_params.get("error") == "no_email" %}
 <p class="error-message" role="alert">Versand nicht m&ouml;glich: F&uuml;r diesen Kunden ist keine E-Mail-Adresse hinterlegt.</p>
 {% endif %}
+{% if request.query_params.get("error") == "already_sent" %}
+<p class="error-message" role="alert">Diese Rechnung wurde bereits per E-Mail versendet und kann nicht mehr bearbeitet werden.</p>
+{% endif %}
 
 <div class="card">
   <p>Kunde: <strong>{{ invoice.customer.name }}</strong>{% if invoice.reverse_charge %} <em>(Reverse-Charge)</em>{% endif %}</p>
@@ -43,6 +46,9 @@
 
   <p>
     <a class="btn" href="/invoices/{{ invoice.id }}/pdf" target="_blank">PDF ansehen</a>
+    {% if not is_sent %}
+    <a class="btn secondary" href="/invoices/{{ invoice.id }}/edit">Bearbeiten</a>
+    {% endif %}
     <form style="display:inline" method="post" action="/invoices/{{ invoice.id }}/send">
       <button type="submit" class="secondary" {{ "disabled" if not invoice.customer.email.strip() else "" }}>Per E-Mail senden</button>
     </form>

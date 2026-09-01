@@ -93,27 +93,43 @@ Container-Austausch bereits begonnen hat (`container_swapped`), und ruft `rollba
 noch auf, wenn das der Fall ist. Schlägt Backup/Pull vorher fehl, läuft die App unverändert
 weiter und es wird lediglich `fehlgeschlagen` gemeldet.
 
-## Release auf die Website hochladen (version.json)
+## Release erstellen (ein Kommando)
 
-Nach Freigabe einer neuen Version wird `version.json` per FTPS (verschlüsselt) auf den
-Webserver hochgeladen, damit Kunden-Instanzen sie unter
-`https://www.weidlinger-soft.at/apps/ws-verlag/version.json` finden (siehe
-`docs/update-manifest-format.md` für das Format).
+`deploy/release.py` deckt den kompletten Release-Ablauf ab: Version hochzaehlen,
+Git-Commit + Tag, Docker-Image bauen und zu `ghcr.io` pushen, Digest ermitteln,
+`version.json` schreiben und per FTPS auf `https://www.weidlinger-soft.at/apps/ws-verlag/version.json`
+hochladen (Manifest-Format siehe `docs/update-manifest-format.md`).
 
 ```bash
-# 1. Version hochzaehlen, Image bauen/pushen, Digest ermitteln (siehe Release-Ablauf
-#    in docs/update-manifest-format.md), dann:
-# 2. deploy/release_upload/version.json mit den neuen Werten aktualisieren
-# 3. Hochladen:
-poetry run python deploy/deploy_release.py
+poetry run python deploy/release.py 0.2.0 --changelog "- Neue Funktion X\n- Fehlerbehebung Y"
 ```
 
-Voraussetzung: `deploy/.env.deploy` mit den FTP-Zugangsdaten (Vorlage:
+`--changelog` ist optional; fehlt es, wird interaktiv danach gefragt.
+
+**Einmalige Voraussetzung:** `docker login ghcr.io` mit einem GitHub Personal Access
+Token (Scope `write:packages`, `read:packages`; erzeugbar unter github.com → Settings →
+Developer settings → Personal access tokens (classic)). Danach merkt sich Docker die
+Anmeldung dauerhaft, kein erneuter Login noetig.
+
+Außerdem noetig: `deploy/.env.deploy` mit den FTP-Zugangsdaten (Vorlage:
 `deploy/.env.deploy.example`). Diese Datei ist per `.gitignore` ausgeschlossen und
 **darf niemals committet werden** — sie enthält Klartext-Zugangsdaten für den
 Webserver-FTP-Account.
 
-Details zum Skript:
+Das Skript bricht bei jedem Fehler sofort ab (z. B. unsauberer Git-Arbeitsbaum,
+ungültige/nicht-groessere Versionsnummer, fehlgeschlagener Docker-Push). Es committet
+und taggt lokal (`Release X.Y.Z` / `vX.Y.Z`), pusht aber **nie automatisch** zu einem
+Git-Remote — den dafür am Ende ausgegebenen Befehl (`git push origin main --follow-tags`)
+führt man bewusst selbst aus.
+
+Für einen reinen erneuten Upload (z. B. Tippfehler im Changelog korrigiert, kein neues
+Image nötig) kann weiterhin nur der Upload-Teil einzeln aufgerufen werden:
+
+```bash
+poetry run python deploy/deploy_release.py
+```
+
+Details zum FTP-Upload:
 
 - Verwendet ausschließlich **FTPS** (FTP over TLS), kein Klartext-FTP — sowohl Login als
   auch der Datenkanal (`prot_p()`) sind verschlüsselt.

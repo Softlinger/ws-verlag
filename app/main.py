@@ -12,6 +12,7 @@ from app.database import Base, SessionLocal, engine, ensure_new_columns, get_db
 from app.models import Invoice, InvoiceStatus, User
 from app.routers import (
     account,
+    accounting,
     articles,
     auth,
     company,
@@ -88,6 +89,7 @@ async def attach_current_user(request: Request, call_next):
     return await call_next(request)
 
 app.include_router(auth.router)
+app.include_router(accounting.router)
 app.include_router(customers.router)
 app.include_router(articles.router)
 app.include_router(orders.router)

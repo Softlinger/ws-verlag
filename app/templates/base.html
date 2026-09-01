@@ -16,7 +16,15 @@
         <li><a href="/orders">Auftr&auml;ge</a></li>
         <li><a href="/invoices">Rechnungen</a></li>
         <li><a href="/credit-notes">Gutschriften</a></li>
-        <li><a href="/dunning">Mahnwesen</a></li>
+        <li>
+          <details class="help-menu">
+            <summary>Buchhaltung</summary>
+            <ul>
+              <li><a href="/accounting/open-items">Offene Posten</a></li>
+              <li><a href="/dunning">Mahnwesen</a></li>
+            </ul>
+          </details>
+        </li>
         <li><a href="/customers">Kunden</a></li>
         <li><a href="/articles">Artikel</a></li>
         {% if request.state.user.role.value == "admin" %}

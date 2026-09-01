@@ -90,7 +90,8 @@ def bump_version_files(new_version: str, *, version_py: Path = VERSION_PY, pypro
 def git_commit_and_tag(new_version: str) -> None:
     run(["git", "add", str(VERSION_PY), str(PYPROJECT_TOML)], check=True)
     run(["git", "commit", "-m", f"Release {new_version}"], check=True)
-    run(["git", "tag", f"v{new_version}"], check=True)
+    # Annotierter Tag (nicht "lightweight") - nur den nimmt 'git push --follow-tags' automatisch mit.
+    run(["git", "tag", "-a", f"v{new_version}", "-m", f"Release {new_version}"], check=True)
 
 
 def docker_build(image: str, new_version: str) -> None:

@@ -13,3 +13,4 @@ backups/
 update-signal/
 deploy/.env.deploy
 app/static/uploads/
+docker-compose.override.yml

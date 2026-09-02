@@ -99,11 +99,22 @@ def create_backup() -> Path:
     if MARIADB_CONTAINER_NAME:
         target = BACKUP_DIR / f"ws_verlag-{timestamp}.sql"
         dump_container = client.containers.get(MARIADB_CONTAINER_NAME)
-        exit_code, output = dump_container.exec_run(
-            ["mysqldump", f"-u{MARIADB_USER}", f"-p{MARIADB_PASSWORD}", MARIADB_DATABASE]
-        )
-        if exit_code != 0:
-            raise RuntimeError(f"mysqldump fehlgeschlagen (exit {exit_code})")
+
+        # "mariadb-dump" ist der aktuelle Binaername (mariadb:11-Image); "mysqldump" als
+        # Fallback fuer aeltere Images, die noch den klassischen Namen mitbringen (gleiches
+        # Muster wie beim Restore weiter unten mit "mariadb"/"mysql").
+        last_exit_code = 127
+        output = b""
+        for dump_bin in ("mariadb-dump", "mysqldump"):
+            exit_code, output = dump_container.exec_run(
+                [dump_bin, f"-u{MARIADB_USER}", f"-p{MARIADB_PASSWORD}", MARIADB_DATABASE]
+            )
+            last_exit_code = exit_code
+            if exit_code == 0:
+                break
+
+        if last_exit_code != 0:
+            raise RuntimeError(f"mariadb-dump/mysqldump fehlgeschlagen (exit {last_exit_code})")
         target.write_bytes(output)
         log(f"MariaDB-Backup angelegt: {target}")
         return target

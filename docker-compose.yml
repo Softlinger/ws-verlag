@@ -12,7 +12,10 @@ services:
     environment:
       DATABASE_URL: mysql+pymysql://ws_verlag:${MARIADB_PASSWORD}@mariadb:3306/ws_verlag
     volumes:
-      - update_signal:/update-signal:ro
+      # Beschreibbar: die App schreibt hierher update_request.json/backup_request.json/
+      # restore_request.json (siehe app/routers/updates.py, app/routers/help.py) und liest
+      # restore_status.json, das der Updater-Container zurueckschreibt.
+      - update_signal:/update-signal
       - ./backups:/backups:ro
     depends_on:
       mariadb:

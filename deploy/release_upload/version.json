@@ -1,8 +1,8 @@
 {
-  "version": "0.2.0",
-  "release_date": "2026-09-01",
-  "changelog": "- Belegdruck-Layout verbessert (Spaltenabstaende, Preisspalte, Reverse-Charge/Zahlungsbedingungen)\n- Rechnungen sind bearbeitbar, solange sie noch nicht versendet wurden",
+  "version": "0.2.2",
+  "release_date": "2026-09-02",
+  "changelog": "- Datenbank-Sicherung: manuelle Sicherung und Wiederherstellung ueber die Hilfe-Seite (Admin), taegliche automatische Sicherung mit Rotation\n- Update-/Sicherungs-/Wiederherstellungs-Anforderung: Schreibfehler auf das Signal-Verzeichnis behoben (war read-only gemountet)\n- MariaDB-Sicherung: falschen Binaernamen (mysqldump) auf mariadb-dump korrigiert, mit Fallback\n- Belegdruck: fehlende Leerzeile zwischen Reverse-Charge-Hinweis und Zahlungsbedingungen behoben",
   "image": "ghcr.io/softlinger/ws-verlag",
-  "image_digest": "sha256:41129382a491c197e9653d1c0a8ed9637f488f7f4a6d1d5fb80f9542ecccfab7",
-  "min_upgrade_from": "0.1.0"
+  "image_digest": "sha256:7e77abc9de66266dcf9fc36db3e1ac8075480dcc99207bda755b9a2bc36cce3f",
+  "min_upgrade_from": "0.2.1"
 }

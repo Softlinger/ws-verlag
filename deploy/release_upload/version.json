@@ -1,8 +1,8 @@
 {
-  "version": "0.2.3",
+  "version": "0.3.0",
   "release_date": "2026-09-02",
-  "changelog": "Testrelease zur Verifikation der automatischen Update-Funktion (Backup, Container-Austausch, Health-Check) - keine funktionalen Aenderungen gegenueber 0.2.2.",
+  "changelog": "- Neue Buchhaltungs-Berichte: Saldenliste und USt.-Voranmeldung (interne Aufstellung) fuer frei waehlbaren Zeitraum\\n- Export je Bericht als CSV oder PDF",
   "image": "ghcr.io/softlinger/ws-verlag",
-  "image_digest": "sha256:47a3c81d108c3e433268e9b709ebd0c51ef6a7f4242df149c9f996888ad34b5b",
-  "min_upgrade_from": "0.2.2"
+  "image_digest": "sha256:67f24f2903a3beaa2f6c4682a1f766ac7e86a4ba30e7dcae8ac83193dfa87e5f",
+  "min_upgrade_from": "0.2.3"
 }

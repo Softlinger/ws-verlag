@@ -6,6 +6,7 @@
 <nav aria-label="Hilfe-Bereiche" class="card">
   <ul>
     <li><a href="#handbuch">Handbuch</a></li>
+    {% if backups is defined %}<li><a href="#sicherung">Datensicherung</a></li>{% endif %}
     <li><a href="#ueber">&Uuml;ber diese Software</a></li>
     <li><a href="#kontakt">Kontakt</a></li>
   </ul>
@@ -61,6 +62,70 @@
      angelegt; schl&auml;gt die Installation fehl, wird automatisch auf die vorherige Version
      zur&uuml;ckgesetzt.</p>
 </section>
+
+{% if backups is defined %}
+<section id="sicherung" class="card" aria-labelledby="sicherung-heading">
+  <h2 id="sicherung-heading">Datensicherung (nur Admin)</h2>
+  <p>Die Datenbank wird automatisch t&auml;glich gesichert; &auml;ltere Sicherungen werden
+     laufend bereinigt, die letzten 14 Sicherungen bleiben erhalten. Die Sicherung erfolgt
+     durch den separaten Updater-Dienst direkt auf den Server-PC (Verzeichnis <code>backups/</code>).
+     Eine Sicherung kann jederzeit wiederhergestellt werden — dabei wird der aktuelle Stand
+     vor dem &Uuml;berschreiben automatisch selbst nochmal gesichert.</p>
+
+  {% if backup_requested %}
+  <p role="status">Sicherung wurde angefordert. Sie erscheint in wenigen Sekunden in der Liste
+     unten — Seite dazu neu laden.</p>
+  {% endif %}
+
+  {% if restore_requested %}
+  <p role="status">Wiederherstellung wurde angefordert und l&auml;uft in K&uuml;rze. Diese Seite
+     kann neu geladen werden, um das Ergebnis unten zu sehen.</p>
+  {% endif %}
+
+  {% if restore_error %}
+  <p class="error-message" role="alert">Ung&uuml;ltige Sicherungsdatei ausgew&auml;hlt.</p>
+  {% endif %}
+
+  {% if restore_status %}
+    {% if restore_status.status == "erfolgreich" %}
+    <p role="status">{{ restore_status.message }} ({{ restore_status.finished_at }})</p>
+    {% else %}
+    <p class="error-message" role="alert">Wiederherstellung fehlgeschlagen: {{ restore_status.message }}</p>
+    {% endif %}
+  {% endif %}
+
+  <form method="post" action="/help/backups/run">
+    <button type="submit">Jetzt sichern</button>
+  </form>
+
+  {% if backups %}
+  <table>
+    <thead>
+      <tr><th>Datei</th><th>Zeitpunkt</th><th>Gr&ouml;&szlig;e</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for backup in backups %}
+      <tr>
+        <td>{{ backup.name }}</td>
+        <td>{{ backup.modified.strftime('%d.%m.%Y %H:%M') }}</td>
+        <td>{{ backup.size_kb }} KB</td>
+        <td>
+          <form method="post" action="/help/backups/restore"
+                onsubmit="return confirm('Aktuelle Datenbank wirklich mit {{ backup.name }} &uuml;berschreiben? Der jetzige Stand wird vorher automatisch gesichert.');">
+            <input type="hidden" name="filename" value="{{ backup.name }}">
+            <button type="submit" class="secondary">Wiederherstellen</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>Noch keine Sicherung vorhanden.</p>
+  {% endif %}
+</section>
+{% endif %}
+
 
 <section id="ueber" class="card" aria-labelledby="ueber-heading">
   <h2 id="ueber-heading">&Uuml;ber diese Software</h2>

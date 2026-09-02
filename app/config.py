@@ -26,5 +26,9 @@ class Settings(BaseSettings):
     # privilegierten Updater-Container ein Update-Signal uebergibt (gemeinsames Volume).
     update_signal_dir: str = "/update-signal"
 
+    # Nur relevant im Docker-Betrieb: read-only in den App-Container gemountetes
+    # Backup-Verzeichnis (der Updater-Container schreibt dort, siehe updater/updater.py).
+    backups_dir: str = "/backups"
+
 
 settings = Settings()

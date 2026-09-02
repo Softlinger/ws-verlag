@@ -80,9 +80,9 @@ TAX_SIZE, TAX_LEADING = 14, 5.6
 
 RC_TEXT_Y_TOP, RC_TEXT_SIZE = 243, 14
 RC_TEXT_LEADING = 5.5  # mm Zeilenabstand innerhalb des Reverse-Charge-Texts (siehe _draw_reverse_charge_text)
-# Der Reverse-Charge-Text hat 2 Zeilen (bei RC_TEXT_Y_TOP und +1*LEADING); +1 weitere Zeile
-# Abstand danach ergibt +2*LEADING ab RC_TEXT_Y_TOP.
-TERMS_Y_TOP, TERMS_SIZE = RC_TEXT_Y_TOP + 2 * RC_TEXT_LEADING, 14
+# Der Reverse-Charge-Text hat 2 Zeilen (bei RC_TEXT_Y_TOP und +1*LEADING); +1 weitere Leerzeile
+# vor den Zahlungsbedingungen ergibt +3*LEADING ab RC_TEXT_Y_TOP.
+TERMS_Y_TOP, TERMS_SIZE = RC_TEXT_Y_TOP + 3 * RC_TEXT_LEADING, 14
 BANK_Y_TOP, BANK_SIZE, BANK_LEADING = 273, 10, 4.2
 
 
@@ -264,23 +264,31 @@ def _render_beleg_pdf(
 def _draw_tax_block(
     c: canvas.Canvas, *, y_top: float, totals, reverse_charge: bool, advertising_tax_applicable: bool, advertising_tax_rate: Decimal
 ) -> None:
-    y = _y(y_top)
-    c.line(PRINT_LEFT * mm, y + 2 * mm, ITEMS_LINE_RIGHT_X * mm, y + 2 * mm)
-    y_top += TAX_LEADING * 0.8
+    # Ist keine Steuer faellig (weder Werbesteuer noch MwSt., z. B. reines Reverse-Charge
+    # ohne Werbesteuer), wird zwischen Positionen und Gesamtbetrag nur EIN Strich gezogen
+    # statt zwei direkt aufeinanderfolgenden Strichen ohne Inhalt dazwischen.
+    has_tax_lines = advertising_tax_applicable or (not reverse_charge and bool(totals.vat_breakdown))
 
-    c.setFont("Helvetica", TAX_SIZE)
-    if advertising_tax_applicable:
+    if has_tax_lines:
         y = _y(y_top)
-        c.drawString(ITEMS_DESC_X * mm, y, f"+{advertising_tax_rate}% Werbesteuer")
-        c.drawRightString(ITEMS_PRICE_RIGHT_X * mm, y, f"€ {totals.advertising_tax_amount:.2f}")
-        y_top += TAX_LEADING
+        c.line(PRINT_LEFT * mm, y + 2 * mm, ITEMS_LINE_RIGHT_X * mm, y + 2 * mm)
+        y_top += TAX_LEADING * 0.8
 
-    if not reverse_charge:
-        for rate, amount in totals.vat_breakdown.items():
+        c.setFont("Helvetica", TAX_SIZE)
+        if advertising_tax_applicable:
             y = _y(y_top)
-            c.drawString(ITEMS_DESC_X * mm, y, f"+{rate}% MwSt.")
-            c.drawRightString(ITEMS_PRICE_RIGHT_X * mm, y, f"€ {amount:.2f}")
+            c.drawString(ITEMS_DESC_X * mm, y, f"+{advertising_tax_rate}% Werbesteuer")
+            c.drawRightString(ITEMS_PRICE_RIGHT_X * mm, y, f"€ {totals.advertising_tax_amount:.2f}")
             y_top += TAX_LEADING
+
+        if not reverse_charge:
+            for rate, amount in totals.vat_breakdown.items():
+                y = _y(y_top)
+                c.drawString(ITEMS_DESC_X * mm, y, f"+{rate}% MwSt.")
+                c.drawRightString(ITEMS_PRICE_RIGHT_X * mm, y, f"€ {amount:.2f}")
+                y_top += TAX_LEADING
+    else:
+        y_top += TAX_LEADING * 0.8
 
     y = _y(y_top)
     c.line(PRINT_LEFT * mm, y + 2 * mm, ITEMS_LINE_RIGHT_X * mm, y + 2 * mm)

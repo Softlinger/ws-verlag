@@ -13,6 +13,7 @@ services:
       DATABASE_URL: mysql+pymysql://ws_verlag:${MARIADB_PASSWORD}@mariadb:3306/ws_verlag
     volumes:
       - update_signal:/update-signal:ro
+      - ./backups:/backups:ro
     depends_on:
       mariadb:
         condition: service_healthy
@@ -43,6 +44,8 @@ services:
   # Einziger Container mit Docker-Socket-Zugriff (= faktisch Root-Rechte auf dem NAS-Host).
   # Fuehrt Backup, Image-Pull, Container-Austausch und Rollback fuer den Update-Mechanismus
   # aus - siehe app/routers/updates.py und updater/updater.py. Bewusst kein Port-Publish.
+  # Legt ausserdem die regelmaessige, taegliche Datenbank-Sicherung an (BACKUP_INTERVAL_HOURS)
+  # und behaelt davon nur die juengsten BACKUP_RETENTION_COUNT Dateien.
   updater:
     build: ./updater
     container_name: ws-verlag-updater
@@ -53,6 +56,8 @@ services:
       REPORT_URL: http://ws-verlag-app:8000/updates/report
       UPDATE_SIGNAL_DIR: /update-signal
       BACKUP_DIR: /backups
+      BACKUP_INTERVAL_HOURS: "24"
+      BACKUP_RETENTION_COUNT: "14"
       MARIADB_CONTAINER_NAME: ws-verlag-db
       MARIADB_DATABASE: ws_verlag
       MARIADB_USER: root

@@ -21,10 +21,28 @@ Ablauf pro Zyklus:
   5. Health-Check gegen /healthz im internen Netzwerk, mit Timeout.
   6. Erfolg: alten Container entfernen, Ergebnis an die App melden.
      Fehlschlag: neuen Container stoppen, alten Container reaktivieren, Ergebnis melden.
+
+Zusaetzlich, unabhaengig vom Update-Ablauf: regelmaessige Datenbank-Sicherung.
+  - Automatisch alle BACKUP_INTERVAL_HOURS Stunden (Default 24), erkannt anhand des
+    Zeitstempels der juengsten vorhandenen Backup-Datei (kein zusaetzlicher State noetig -
+    ein Update-Backup oder manuelles Backup verschiebt den naechsten faelligen Zeitpunkt,
+    das ist bewusst so einfach gehalten).
+  - Manuell ausloesbar per backup_request.json im Signal-Verzeichnis (siehe app/routers/help.py).
+  - Nach jedem Backup werden alte Sicherungen ueber BACKUP_RETENTION_COUNT hinaus geloescht.
+  - Sicherungen landen im gemeinsamen ./backups-Verzeichnis, das read-only auch in den
+    App-Container gemountet ist (Hilfe-Seite listet sie direkt aus dem Dateisystem).
+
+Zusaetzlich: Wiederherstellung (Restore) einer Sicherung, ausgeloest per restore_request.json
+  im Signal-Verzeichnis (siehe app/routers/help.py, nur Admin, mit Bestaetigung in der UI).
+  Vor dem Ueberschreiben wird sicherheitshalber selbst nochmal ein Backup angelegt. Das
+  Ergebnis wird als restore_status.json ins Signal-Verzeichnis geschrieben (App liest das
+  read-only, kein zusaetzlicher HTTP-Report-Endpunkt noetig - gleiches Volume wie fuers Signal).
 """
+import io
 import json
 import os
 import shutil
+import tarfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -34,7 +52,12 @@ import requests
 
 SIGNAL_DIR = Path(os.environ.get("UPDATE_SIGNAL_DIR", "/update-signal"))
 REQUEST_FILE = SIGNAL_DIR / "update_request.json"
+BACKUP_REQUEST_FILE = SIGNAL_DIR / "backup_request.json"
+RESTORE_REQUEST_FILE = SIGNAL_DIR / "restore_request.json"
+RESTORE_STATUS_FILE = SIGNAL_DIR / "restore_status.json"
 BACKUP_DIR = Path(os.environ.get("BACKUP_DIR", "/backups"))
+BACKUP_INTERVAL_HOURS = int(os.environ.get("BACKUP_INTERVAL_HOURS", "24"))
+BACKUP_RETENTION_COUNT = int(os.environ.get("BACKUP_RETENTION_COUNT", "14"))
 POLL_INTERVAL_SECONDS = int(os.environ.get("POLL_INTERVAL_SECONDS", "15"))
 HEALTHCHECK_TIMEOUT_SECONDS = int(os.environ.get("HEALTHCHECK_TIMEOUT_SECONDS", "90"))
 HEALTHCHECK_URL = os.environ.get("HEALTHCHECK_URL", "http://ws-verlag-app:8000/healthz")
@@ -86,6 +109,105 @@ def create_backup() -> Path:
         return target
 
     raise RuntimeError("Weder SQLITE_DB_PATH noch MARIADB_CONTAINER_NAME konfiguriert - kein Backup moeglich.")
+
+
+def _backup_files() -> list[Path]:
+    if not BACKUP_DIR.is_dir():
+        return []
+    return [p for p in BACKUP_DIR.iterdir() if p.is_file() and p.name.startswith("ws_verlag-")]
+
+
+def rotate_backups(retention: int = BACKUP_RETENTION_COUNT) -> None:
+    """Behaelt nur die 'retention' juengsten Backup-Dateien, aeltere werden geloescht."""
+    files = sorted(_backup_files(), key=lambda p: p.stat().st_mtime, reverse=True)
+    for old_file in files[retention:]:
+        old_file.unlink(missing_ok=True)
+        log(f"Alte Sicherung geloescht (Rotation): {old_file}")
+
+
+def latest_backup_age_seconds() -> float | None:
+    files = _backup_files()
+    if not files:
+        return None
+    newest_mtime = max(p.stat().st_mtime for p in files)
+    return time.time() - newest_mtime
+
+
+def run_backup_cycle() -> None:
+    create_backup()
+    rotate_backups()
+
+
+def write_restore_status(status: str, message: str, filename: str) -> None:
+    payload = {
+        "status": status,
+        "message": message[:500],
+        "filename": filename,
+        "finished_at": datetime.now(timezone.utc).isoformat(),
+    }
+    RESTORE_STATUS_FILE.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def _copy_file_into_container(container, file_path: Path, container_dir: str) -> None:
+    tar_stream = io.BytesIO()
+    with tarfile.open(fileobj=tar_stream, mode="w") as tar:
+        tar.add(str(file_path), arcname=file_path.name)
+    tar_stream.seek(0)
+    container.put_archive(container_dir, tar_stream)
+
+
+def restore_backup(filename: str) -> None:
+    """Ueberschreibt die aktuelle Datenbank mit dem Inhalt der angegebenen Sicherungsdatei.
+    filename muss bereits von app/routers/help.py gegen die tatsaechlich vorhandenen
+    Backup-Dateien geprueft worden sein; hier trotzdem sicherheitshalber nur der reine
+    Dateiname ohne Pfadanteil verwendet."""
+    backup_file = BACKUP_DIR / Path(filename).name
+    if not backup_file.is_file():
+        raise RuntimeError(f"Sicherungsdatei nicht gefunden: {filename}")
+
+    log(f"Stelle Sicherung wieder her: {filename}")
+    run_backup_cycle()  # Sicherheitsnetz: Stand vor dem Restore bleibt selbst als Backup erhalten.
+
+    if SQLITE_DB_PATH:
+        shutil.copy2(backup_file, SQLITE_DB_PATH)
+        log(f"SQLite-Datenbank aus {filename} wiederhergestellt.")
+        return
+
+    if MARIADB_CONTAINER_NAME:
+        dump_container = client.containers.get(MARIADB_CONTAINER_NAME)
+        _copy_file_into_container(dump_container, backup_file, "/tmp")
+        # Konstanter Zielname im Container, damit der Shell-Befehl unten keinen
+        # variablen Dateinamen enthalten muss.
+        dump_container.exec_run(["mv", f"/tmp/{backup_file.name}", "/tmp/restore_source"])
+
+        # Zugangsdaten bewusst als Umgebungsvariablen statt String-Interpolation in den
+        # Shell-Befehl, damit Sonderzeichen im Passwort keine Shell-Injection ermoeglichen.
+        env = {"DB_USER": MARIADB_USER, "DB_PASSWORD": MARIADB_PASSWORD, "DB_NAME": MARIADB_DATABASE}
+        restore_commands = [
+            'mariadb -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < /tmp/restore_source',
+            'mysql -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < /tmp/restore_source',
+        ]
+
+        last_exit_code = 127
+        last_output = b""
+        for command in restore_commands:
+            exit_code, output = dump_container.exec_run(["sh", "-c", command], environment=env)
+            last_exit_code = exit_code
+            last_output = output
+            if exit_code == 0:
+                break
+
+        dump_container.exec_run(["rm", "-f", "/tmp/restore_source"])
+
+        if last_exit_code != 0:
+            raise RuntimeError(
+                f"Wiederherstellung fehlgeschlagen (exit {last_exit_code}): "
+                f"{last_output.decode(errors='replace')[:300]}"
+            )
+        log(f"MariaDB-Datenbank aus {filename} wiederhergestellt.")
+        return
+
+    raise RuntimeError("Weder SQLITE_DB_PATH noch MARIADB_CONTAINER_NAME konfiguriert - keine Wiederherstellung moeglich.")
 
 
 def pull_new_image(image_ref: str, image_digest: str) -> str:
@@ -166,7 +288,7 @@ def process_request(payload: dict) -> None:
 
     container_swapped = False
     try:
-        create_backup()
+        run_backup_cycle()
         new_image_id = pull_new_image(image_ref, image_digest)
 
         # Ab hier wird der laufende Container tatsaechlich angefasst - erst jetzt darf im
@@ -199,7 +321,7 @@ def process_request(payload: dict) -> None:
 
 
 def main() -> None:
-    log("Updater gestartet, warte auf Update-Anforderungen...")
+    log("Updater gestartet, warte auf Update-/Sicherungs-Anforderungen...")
     while True:
         if REQUEST_FILE.exists():
             try:
@@ -209,6 +331,36 @@ def main() -> None:
             except (json.JSONDecodeError, KeyError) as exc:
                 log(f"Ungueltige Update-Anforderung ignoriert: {exc}")
                 REQUEST_FILE.unlink(missing_ok=True)
+
+        if BACKUP_REQUEST_FILE.exists():
+            BACKUP_REQUEST_FILE.unlink(missing_ok=True)
+            log("Manuelle Sicherung angefordert.")
+            try:
+                run_backup_cycle()
+            except Exception as exc:  # noqa: BLE001 - Fehler darf die Schleife nicht beenden
+                log(f"Manuelle Sicherung fehlgeschlagen: {exc}")
+
+        if RESTORE_REQUEST_FILE.exists():
+            filename = ""
+            try:
+                payload = json.loads(RESTORE_REQUEST_FILE.read_text(encoding="utf-8"))
+                filename = payload["filename"]
+                RESTORE_REQUEST_FILE.unlink()
+                restore_backup(filename)
+                write_restore_status("erfolgreich", f"Sicherung {filename} erfolgreich wiederhergestellt.", filename)
+            except Exception as exc:  # noqa: BLE001 - Fehler darf die Schleife nicht beenden
+                log(f"Wiederherstellung fehlgeschlagen: {exc}")
+                RESTORE_REQUEST_FILE.unlink(missing_ok=True)
+                write_restore_status("fehlgeschlagen", str(exc), filename)
+
+        age_seconds = latest_backup_age_seconds()
+        if age_seconds is None or age_seconds >= BACKUP_INTERVAL_HOURS * 3600:
+            log("Regelmaessige Sicherung faellig.")
+            try:
+                run_backup_cycle()
+            except Exception as exc:  # noqa: BLE001 - Fehler darf die Schleife nicht beenden
+                log(f"Regelmaessige Sicherung fehlgeschlagen: {exc}")
+
         time.sleep(POLL_INTERVAL_SECONDS)
 
 

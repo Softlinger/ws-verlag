@@ -61,6 +61,18 @@ docker compose exec app curl -X POST http://localhost:8000/updates/check
 Backups landen unter `./backups` (Host-Verzeichnis, im Compose gemountet) — regelmäßig
 extern sichern (z. B. Synology Hyper Backup auf dieses Verzeichnis ansetzen).
 
+## Datenbank-Sicherung
+
+Der Updater-Container legt automatisch alle `BACKUP_INTERVAL_HOURS` Stunden (Default: 24)
+eine Sicherung der MariaDB-Datenbank unter `./backups` an und behält davon nur die letzten
+`BACKUP_RETENTION_COUNT` Dateien (Default: 14) — ältere werden automatisch gelöscht. Admins
+können unter „Hilfe“ → „Datensicherung“ zusätzlich jederzeit eine sofortige Sicherung
+anstoßen, die vorhandenen Sicherungen (Dateiname, Zeitpunkt, Größe) einsehen und eine davon
+wiederherstellen (überschreibt die aktuelle Datenbank; der bisherige Stand wird davor
+automatisch selbst nochmal gesichert). Wie beim Update läuft die eigentliche Aktion im
+privilegierten Updater-Container, die App-Container-Seite schreibt nur ein Signal ins
+gemeinsame Volume.
+
 ## Verifiziert (2026-08-30, lokaler Docker-Test)
 
 Kompletter Stack (App + MariaDB + Updater) gebaut und gestartet, Seed gegen MariaDB

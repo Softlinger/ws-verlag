@@ -65,6 +65,10 @@ services:
       MARIADB_DATABASE: ws_verlag
       MARIADB_USER: root
       MARIADB_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      # GitHub Personal Access Token (Scope: read:packages) fuer den Image-Pull beim Update -
+      # ein "docker login" auf dem Host reicht nicht, siehe Kommentar in updater/updater.py.
+      GHCR_USERNAME: ${GHCR_USERNAME:-}
+      GHCR_TOKEN: ${GHCR_TOKEN:-}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - update_signal:/update-signal

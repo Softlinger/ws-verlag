@@ -72,6 +72,13 @@ MARIADB_DATABASE = os.environ.get("MARIADB_DATABASE", "ws_verlag")
 MARIADB_USER = os.environ.get("MARIADB_USER", "root")
 MARIADB_PASSWORD = os.environ.get("MARIADB_PASSWORD", "")
 
+# GHCR-Zugangsdaten fuer den Image-Pull. Ein "docker login" auf dem Host wirkt sich NICHT
+# auf Pulls aus, die dieser Container ueber die Docker-Engine-API (Socket) ausloest - die
+# Engine-API braucht Credentials explizit im Request. Read-only PAT (Scope: read:packages)
+# genuegt, siehe README-DEPLOYMENT.md.
+GHCR_USERNAME = os.environ.get("GHCR_USERNAME", "")
+GHCR_TOKEN = os.environ.get("GHCR_TOKEN", "")
+
 client = docker.from_env()
 
 
@@ -224,8 +231,28 @@ def restore_backup(filename: str) -> None:
 def pull_new_image(image_ref: str, image_digest: str) -> str:
     full_ref = f"{image_ref}@{image_digest}"
     log(f"Ziehe neues Image: {full_ref}")
-    image = client.images.pull(full_ref)
+    auth_config = {"username": GHCR_USERNAME, "password": GHCR_TOKEN} if GHCR_USERNAME and GHCR_TOKEN else None
+    image = client.images.pull(full_ref, auth_config=auth_config)
     return image.id
+
+
+def _convert_port_bindings(raw_bindings: dict | None) -> dict | None:
+    """Wandelt das rohe Docker-Engine-Format von HostConfig.PortBindings
+    (z. B. {"8000/tcp": [{"HostIp": "0.0.0.0", "HostPort": "8000"}]}) in das von
+    docker-py's containers.run(ports=...) erwartete Format um. Ohne diese Umwandlung
+    verliert der neue Container beim Update jede Portfreigabe des alten Containers."""
+    if not raw_bindings:
+        return None
+    ports: dict = {}
+    for container_port, host_entries in raw_bindings.items():
+        if not host_entries:
+            continue
+        values = [
+            (entry["HostIp"], entry["HostPort"]) if entry.get("HostIp") else entry["HostPort"]
+            for entry in host_entries
+        ]
+        ports[container_port] = values if len(values) > 1 else values[0]
+    return ports or None
 
 
 def recreate_container(new_image_id: str) -> None:
@@ -244,6 +271,7 @@ def recreate_container(new_image_id: str) -> None:
         detach=True,
         environment=config.get("Env", []),
         volumes=host_config.get("Binds", []),
+        ports=_convert_port_bindings(host_config.get("PortBindings")),
         network=networks[0] if networks else None,
         restart_policy=host_config.get("RestartPolicy"),
     )

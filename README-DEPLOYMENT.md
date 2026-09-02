@@ -38,7 +38,12 @@ genau diesen einen Container beschränkt:
 
 ```bash
 cp .env.example .env
-# .env bearbeiten: SECRET_KEY, MARIADB_PASSWORD, MARIADB_ROOT_PASSWORD setzen
+# .env bearbeiten: SECRET_KEY, MARIADB_PASSWORD, MARIADB_ROOT_PASSWORD setzen.
+# Ausserdem GHCR_USERNAME/GHCR_TOKEN setzen (GitHub Personal Access Token, Scope
+# "read:packages", unter https://github.com/settings/tokens erzeugen) - ohne diesen
+# Token kann der Updater-Container spaeter kein Image-Update von ghcr.io ziehen. Ein
+# "docker login" auf dem Host reicht NICHT, da der Updater ueber die Docker-Engine-API
+# (Socket) pullt, nicht ueber die Docker-CLI - siehe Kommentar in updater/updater.py.
 
 docker build -t ws-verlag-app:local .
 docker compose up -d

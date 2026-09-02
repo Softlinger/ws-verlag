@@ -1,6 +1,6 @@
 [project]
 name = "ws-verlag"
-version = "0.2.2"
+version = "0.2.3"
 description = "Individualsoftware fuer Verlagskunde: Kunden-, Artikel-, Auftrags-, Rechnungs- und Mahnwesen"
 authors = [{ name = "Gerhard Weidlinger", email = "g.weidlinger@gmail.com" }]
 requires-python = ">=3.11,<3.14"

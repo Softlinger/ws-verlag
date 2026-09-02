@@ -12,10 +12,11 @@ from decimal import Decimal
 from io import BytesIO
 from pathlib import Path
 
+from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
 from app.models import Company
@@ -374,5 +375,87 @@ def render_dunning_pdf(*, company: Company, dunning, invoice, customer) -> bytes
         elements.append(Spacer(1, 6 * mm))
         elements.append(Paragraph(f"Mahngebuehr: {dunning.fee_amount:.2f} EUR", styles["Normal"]))
 
+    doc.build(elements)
+    return buffer.getvalue()
+
+
+def _report_table_style(n_numeric_cols: int) -> TableStyle:
+    """Tabellenstil mit rechtsbuendigen letzten `n_numeric_cols` Spalten (Betraege)."""
+    return TableStyle(
+        [
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#e0e0e0")),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 9),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+            ("ALIGN", (-n_numeric_cols, 0), (-1, -1), "RIGHT"),
+        ]
+    )
+
+
+def _report_header(company: Company, title: str, date_from, date_to) -> list:
+    return [
+        Paragraph(f"<b>{company.name}</b>", styles["Heading2"]),
+        Paragraph(f"<b>{title}</b>", styles["Heading1"]),
+        Paragraph(f"Zeitraum: {date_from.strftime('%d.%m.%Y')} - {date_to.strftime('%d.%m.%Y')}", styles["Normal"]),
+        Spacer(1, 6 * mm),
+    ]
+
+
+def render_balance_list_pdf(*, company: Company, saldenliste) -> bytes:
+    """Saldenliste als PDF (Tabellenlayout, siehe app/services/reporting.py:Saldenliste)."""
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    elements = _report_header(company, "Saldenliste", saldenliste.date_from, saldenliste.date_to)
+
+    for kunde in saldenliste.kunden:
+        elements.append(Paragraph(f"<b>{kunde.customer.name}</b>", styles["Heading3"]))
+        data = [["Belegart", "Nummer", "Datum", "Betrag", "Bezahlt", "Offen"]]
+        for zeile in kunde.zeilen:
+            data.append(
+                [
+                    "Rechnung" if zeile.kind == "rechnung" else "Gutschrift",
+                    zeile.number,
+                    zeile.beleg_date.strftime("%d.%m.%Y"),
+                    f"{zeile.gross_total:.2f}",
+                    f"{zeile.paid_total:.2f}",
+                    f"{zeile.open_amount:.2f}",
+                ]
+            )
+        data.append(["Summe", "", "", f"{kunde.summe_brutto:.2f}", f"{kunde.summe_bezahlt:.2f}", f"{kunde.summe_offen:.2f}"])
+        table = Table(data, colWidths=[28 * mm, 28 * mm, 24 * mm, 28 * mm, 28 * mm, 28 * mm])
+        table.setStyle(_report_table_style(3))
+        elements.append(table)
+        elements.append(Spacer(1, 5 * mm))
+
+    elements.append(Spacer(1, 3 * mm))
+    elements.append(
+        Paragraph(
+            f"<b>Gesamt: {saldenliste.gesamt_brutto:.2f} EUR, bezahlt {saldenliste.gesamt_bezahlt:.2f} EUR, "
+            f"offen {saldenliste.gesamt_offen:.2f} EUR</b>",
+            styles["Normal"],
+        )
+    )
+    doc.build(elements)
+    return buffer.getvalue()
+
+
+def render_vat_summary_pdf(*, company: Company, summary) -> bytes:
+    """USt.-Voranmeldungs-Auswertung als PDF (siehe app/services/reporting.py:VatSummary)."""
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    elements = _report_header(company, "USt.-Voranmeldung (interne Aufstellung)", summary.date_from, summary.date_to)
+
+    data = [["Bezeichnung", "Netto", "USt.-Betrag"]]
+    for rate in sorted(summary.net_by_rate):
+        data.append([f"{rate}% USt.", f"{summary.net_by_rate[rate]:.2f}", f"{summary.vat_by_rate.get(rate, Decimal('0.00')):.2f}"])
+    data.append(["Reverse-Charge (0% USt.)", f"{summary.reverse_charge_net:.2f}", "0.00"])
+    data.append(["Werbesteuer", f"{summary.advertising_tax_amount:.2f}", ""])
+    data.append(["Gesamt Netto", f"{summary.net_total:.2f}", ""])
+    data.append(["Gesamt USt.", "", f"{summary.vat_total:.2f}"])
+    data.append(["Gesamt Brutto", f"{summary.gross_total:.2f}", ""])
+
+    table = Table(data, colWidths=[70 * mm, 40 * mm, 40 * mm])
+    table.setStyle(_report_table_style(2))
+    elements.append(table)
     doc.build(elements)
     return buffer.getvalue()

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Berichte - WS-Verlag Verwaltung{% endblock %}
+{% block content %}
+<h1>Buchhaltung &mdash; Berichte</h1>
+<div class="card">
+  <form method="get" id="report-period-form">
+    <label for="von">Zeitraum von</label>
+    <input id="von" name="von" type="date" required value="{{ date_from.isoformat() }}">
+    <label for="bis">bis</label>
+    <input id="bis" name="bis" type="date" required value="{{ date_to.isoformat() }}">
+    <p>
+      <button type="submit" formaction="/reports/saldenliste">Saldenliste anzeigen</button>
+      <button type="submit" formaction="/reports/uva" class="secondary">USt.-Voranmeldung anzeigen</button>
+    </p>
+  </form>
+</div>
+{% endblock %}

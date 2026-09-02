@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}USt.-Voranmeldung - WS-Verlag Verwaltung{% endblock %}
+{% block content %}
+<h1>USt.-Voranmeldung &mdash; interne Aufstellung</h1>
+<p>
+  Zeitraum: {{ summary.date_from.strftime('%d.%m.%Y') }} &ndash; {{ summary.date_to.strftime('%d.%m.%Y') }}
+</p>
+<p>
+  <a href="/reports?von={{ summary.date_from.isoformat() }}&bis={{ summary.date_to.isoformat() }}">Zeitraum &auml;ndern</a>
+  &middot;
+  <a href="/reports/uva/csv?von={{ summary.date_from.isoformat() }}&bis={{ summary.date_to.isoformat() }}">Als CSV herunterladen</a>
+  &middot;
+  <a href="/reports/uva/pdf?von={{ summary.date_from.isoformat() }}&bis={{ summary.date_to.isoformat() }}">Als PDF herunterladen</a>
+</p>
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Bezeichnung</th>
+        <th scope="col">Netto</th>
+        <th scope="col">USt.-Betrag</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for rate, net in summary.net_by_rate.items()|sort %}
+      <tr>
+        <td>{{ rate }}% USt.</td>
+        <td>{{ "%.2f"|format(net) }} EUR</td>
+        <td>{{ "%.2f"|format(summary.vat_by_rate.get(rate, 0)) }} EUR</td>
+      </tr>
+      {% endfor %}
+      <tr>
+        <td>Reverse-Charge (0% USt.)</td>
+        <td>{{ "%.2f"|format(summary.reverse_charge_net) }} EUR</td>
+        <td>0,00 EUR</td>
+      </tr>
+      <tr>
+        <td>Werbesteuer</td>
+        <td>{{ "%.2f"|format(summary.advertising_tax_amount) }} EUR</td>
+        <td>&mdash;</td>
+      </tr>
+      <tr>
+        <th scope="row">Gesamt Netto</th>
+        <td>{{ "%.2f"|format(summary.net_total) }} EUR</td>
+        <td>&mdash;</td>
+      </tr>
+      <tr>
+        <th scope="row">Gesamt USt.</th>
+        <td>&mdash;</td>
+        <td>{{ "%.2f"|format(summary.vat_total) }} EUR</td>
+      </tr>
+      <tr>
+        <th scope="row">Gesamt Brutto</th>
+        <td colspan="2">{{ "%.2f"|format(summary.gross_total) }} EUR</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}

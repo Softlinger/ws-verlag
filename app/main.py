@@ -23,6 +23,7 @@ from app.routers import (
     invoices,
     mail_log,
     orders,
+    reports,
     updates,
     users,
 )
@@ -96,6 +97,7 @@ app.include_router(orders.router)
 app.include_router(invoices.router)
 app.include_router(credit_notes.router)
 app.include_router(dunning.router)
+app.include_router(reports.router)
 app.include_router(company.router)
 app.include_router(users.router)
 app.include_router(updates.router)

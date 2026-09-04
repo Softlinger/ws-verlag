@@ -19,8 +19,10 @@ Ablauf pro Zyklus:
   4. Laufenden App-Container umbenennen (Rollback-Kandidat), neuen Container mit identischer
      Konfiguration (Env/Mounts/Netzwerk) aus dem neuen Image starten.
   5. Health-Check gegen /healthz im internen Netzwerk, mit Timeout.
-  6. Erfolg: alten Container entfernen, Ergebnis an die App melden.
-     Fehlschlag: neuen Container stoppen, alten Container reaktivieren, Ergebnis melden.
+  6. Erfolg: alten Container UND dessen Image entfernen, Ergebnis an die App melden.
+     Fehlschlag: neuen Container stoppen, alten Container reaktivieren, Ergebnis melden
+     (Image der fehlgeschlagenen Version bleibt bewusst liegen - kein weiterer Pull noetig,
+     falls das Update erneut versucht wird).
 
 Zusaetzlich, unabhaengig vom Update-Ablauf: regelmaessige Datenbank-Sicherung.
   - Automatisch alle BACKUP_INTERVAL_HOURS Stunden (Default 24), erkannt anhand des
@@ -255,8 +257,9 @@ def _convert_port_bindings(raw_bindings: dict | None) -> dict | None:
     return ports or None
 
 
-def recreate_container(new_image_id: str) -> None:
+def recreate_container(new_image_id: str) -> str:
     old_container = client.containers.get(APP_CONTAINER_NAME)
+    old_image_id = old_container.image.id
     config = old_container.attrs["Config"]
     host_config = old_container.attrs["HostConfig"]
     networks = list(old_container.attrs["NetworkSettings"]["Networks"].keys())
@@ -276,6 +279,22 @@ def recreate_container(new_image_id: str) -> None:
         restart_policy=host_config.get("RestartPolicy"),
     )
     log(f"Neuer Container gestartet: {new_container.short_id}")
+    return old_image_id
+
+
+def cleanup_old_image(old_image_id: str, new_image_id: str) -> None:
+    """Entfernt das Image der zuvor laufenden Version, nachdem Update und Health-Check
+    erfolgreich waren. Ohne diesen Schritt sammelt sich pro Update ein weiteres,
+    nicht mehr benutztes Image auf dem Host an (mehrere hundert MB je Version)."""
+    if old_image_id == new_image_id:
+        return
+    try:
+        client.images.remove(old_image_id, force=False)
+        log(f"Altes Image entfernt: {old_image_id}")
+    except docker.errors.ImageNotFound:
+        pass
+    except docker.errors.APIError as exc:
+        log(f"Konnte altes Image nicht entfernen (evtl. noch anderweitig referenziert): {exc}")
 
 
 def wait_for_healthy() -> bool:
@@ -334,10 +353,11 @@ def process_request(payload: dict) -> None:
         # Fehlerfall ein Rollback ausgeloest werden. Schlaegt Backup oder Pull VORHER fehl,
         # laeuft der bisherige, unveraenderte Container einfach unbeeinflusst weiter.
         container_swapped = True
-        recreate_container(new_image_id)
+        old_image_id = recreate_container(new_image_id)
 
         if wait_for_healthy():
             cleanup_rollback_container()
+            cleanup_old_image(old_image_id, new_image_id)
             report("erfolgreich", f"Version {target_version} erfolgreich installiert.")
             log("Update erfolgreich.")
         else:

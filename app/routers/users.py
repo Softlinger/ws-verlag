@@ -52,3 +52,20 @@ def activate_user(user_id: int, db: Session = Depends(get_db), user: User = Depe
         target.active = True
         db.commit()
     return RedirectResponse("/users", status_code=303)
+
+
+@router.post("/{user_id}/reset-password")
+def reset_password(
+    user_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_admin),
+    new_password: str = Form(...),
+):
+    target = db.get(User, user_id)
+    if target is None:
+        return RedirectResponse("/users", status_code=303)
+    if len(new_password) < 8:
+        return RedirectResponse(f"/users?error=password_too_short#user-{target.id}", status_code=303)
+    target.password_hash = hash_password(new_password)
+    db.commit()
+    return RedirectResponse(f"/users?success=password_reset#user-{target.id}", status_code=303)

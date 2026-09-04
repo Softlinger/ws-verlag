@@ -88,11 +88,18 @@
     <tbody>
       {% for account in bank_accounts %}
       <tr>
-        <td>{{ account.label }}</td><td>{{ account.iban }}</td><td>{{ account.bic }}</td><td>{{ account.bank_name }}</td>
-        <td>{{ "Ja" if account.is_default else "Nein" }}</td>
-        <td>
-          <form method="post" action="/company/bank-accounts/{{ account.id }}/delete">
-            <button type="submit" class="danger">L&ouml;schen</button>
+        <td colspan="6">
+          <form method="post" action="/company/bank-accounts/{{ account.id }}/update" style="display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center;">
+            <input name="label" value="{{ account.label }}" required aria-label="Label" style="width:auto;">
+            <input name="iban" value="{{ account.iban }}" required aria-label="IBAN" style="width:auto;">
+            <input name="bic" value="{{ account.bic }}" aria-label="BIC" style="width:auto;">
+            <input name="bank_name" value="{{ account.bank_name }}" aria-label="Bankname" style="width:auto;">
+            <label style="width:auto;">
+              <input name="is_default" type="checkbox" style="width:auto; display:inline-block;" {{ "checked" if account.is_default else "" }}>
+              Standard
+            </label>
+            <button type="submit">Speichern</button>
+            <button type="submit" formaction="/company/bank-accounts/{{ account.id }}/delete" class="danger">L&ouml;schen</button>
           </form>
         </td>
       </tr>
@@ -123,8 +130,20 @@
     <tbody>
       {% for term in payment_terms %}
       <tr>
-        <td>{{ term.name }}</td><td>{{ term.days_due }}</td><td>{{ "Ja" if term.is_default else "Nein" }}</td>
-        <td><form method="post" action="/company/payment-terms/{{ term.id }}/delete"><button type="submit" class="danger">L&ouml;schen</button></form></td>
+        <td colspan="4">
+          <form method="post" action="/company/payment-terms/{{ term.id }}/update" style="display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center;">
+            <input name="name" value="{{ term.name }}" required aria-label="Name" style="width:auto;">
+            <input name="days_due" type="number" value="{{ term.days_due }}" aria-label="Frist (Tage)" style="width:auto;">
+            <input name="description" value="{{ term.description }}" aria-label="Beschreibung" style="width:auto;">
+            <input name="printed_text" value="{{ term.printed_text }}" aria-label="Text auf Beleg" style="width:auto; min-width:16rem;">
+            <label style="width:auto;">
+              <input name="is_default" type="checkbox" style="width:auto; display:inline-block;" {{ "checked" if term.is_default else "" }}>
+              Standard
+            </label>
+            <button type="submit">Speichern</button>
+            <button type="submit" formaction="/company/payment-terms/{{ term.id }}/delete" class="danger">L&ouml;schen</button>
+          </form>
+        </td>
       </tr>
       {% endfor %}
     </tbody>

@@ -3,12 +3,20 @@
 {% block content %}
 <h1>Benutzer</h1>
 <p><a class="btn" href="/users/new">Neuer Benutzer</a></p>
+
+{% if request.query_params.get("error") == "password_too_short" %}
+<p class="error-message" role="alert">Neues Passwort muss mindestens 8 Zeichen lang sein.</p>
+{% endif %}
+{% if request.query_params.get("success") == "password_reset" %}
+<p class="success-message" role="status">Passwort wurde zur&uuml;ckgesetzt.</p>
+{% endif %}
+
 <div class="card">
   <table>
     <thead><tr><th scope="col">Benutzername</th><th scope="col">Name</th><th scope="col">Rolle</th><th scope="col">Aktiv</th><th scope="col">Aktion</th></tr></thead>
     <tbody>
       {% for u in users %}
-      <tr>
+      <tr id="user-{{ u.id }}">
         <td>{{ u.username }}</td><td>{{ u.full_name }}</td><td>{{ u.role.value }}</td><td>{{ "Ja" if u.active else "Nein" }}</td>
         <td>
           {% if u.active %}
@@ -16,6 +24,10 @@
           {% else %}
           <form method="post" action="/users/{{ u.id }}/activate"><button type="submit" class="secondary">Aktivieren</button></form>
           {% endif %}
+          <form method="post" action="/users/{{ u.id }}/reset-password" style="margin-top: 0.5rem;">
+            <input name="new_password" type="password" placeholder="Neues Passwort" required minlength="8" autocomplete="new-password" style="width:auto; display:inline-block;">
+            <button type="submit" class="secondary">Passwort zur&uuml;cksetzen</button>
+          </form>
         </td>
       </tr>
       {% endfor %}

@@ -146,6 +146,31 @@ def create_bank_account(
     return RedirectResponse("/company", status_code=303)
 
 
+@router.post("/bank-accounts/{account_id}/update")
+def update_bank_account(
+    account_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_admin),
+    label: str = Form(...),
+    iban: str = Form(...),
+    bic: str = Form(""),
+    bank_name: str = Form(""),
+    is_default: bool = Form(False),
+):
+    account = db.get(BankAccount, account_id)
+    if account is None:
+        return RedirectResponse("/company", status_code=303)
+    if is_default:
+        db.query(BankAccount).filter(BankAccount.company_id == account.company_id).update({"is_default": False})
+    account.label = label
+    account.iban = iban
+    account.bic = bic
+    account.bank_name = bank_name
+    account.is_default = is_default
+    db.commit()
+    return RedirectResponse("/company", status_code=303)
+
+
 @router.post("/bank-accounts/{account_id}/delete")
 def delete_bank_account(account_id: int, db: Session = Depends(get_db), user: User = Depends(require_admin)):
     account = db.get(BankAccount, account_id)
@@ -172,6 +197,31 @@ def create_payment_term(
             name=name, days_due=days_due, description=description, printed_text=printed_text, is_default=is_default
         )
     )
+    db.commit()
+    return RedirectResponse("/company", status_code=303)
+
+
+@router.post("/payment-terms/{term_id}/update")
+def update_payment_term(
+    term_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_admin),
+    name: str = Form(...),
+    days_due: int = Form(14),
+    description: str = Form(""),
+    printed_text: str = Form("Zahlbar nach Erhalt, ohne Abzug."),
+    is_default: bool = Form(False),
+):
+    term = db.get(PaymentTerm, term_id)
+    if term is None:
+        return RedirectResponse("/company", status_code=303)
+    if is_default:
+        db.query(PaymentTerm).update({"is_default": False})
+    term.name = name
+    term.days_due = days_due
+    term.description = description
+    term.printed_text = printed_text
+    term.is_default = is_default
     db.commit()
     return RedirectResponse("/company", status_code=303)
 

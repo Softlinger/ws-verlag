@@ -16,7 +16,7 @@ from packaging.version import InvalidVersion, Version
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.models import UpdateState
+from app.models import UpdateApplyStatus, UpdateState
 from app.version import __version__ as current_version
 
 
@@ -69,11 +69,28 @@ def check_for_update(db: Session) -> UpdateState:
         state.check_error = ""
         state.last_checked_at = datetime.utcnow()
         if is_newer:
+            is_different_version = str(manifest["version"]) != state.latest_version
             state.latest_version = str(manifest["version"])
             state.changelog = str(manifest.get("changelog", ""))
             state.release_date = str(manifest.get("release_date", ""))
             state.image_ref = str(manifest["image"])
             state.image_digest = str(manifest["image_digest"])
+
+            # Ein frueherer Installationsstatus (erfolgreich/fehlgeschlagen/zurueckgerollt)
+            # bezieht sich auf eine andere Version - ohne Reset wuerde der "Ja, Update
+            # installieren"-Button im Template dauerhaft verschwinden, sobald einmal ein
+            # Update installiert wurde. Ein laufender Installationsvorgang (angefordert/
+            # wird_installiert) wird nicht angetastet.
+            if is_different_version and state.apply_status in (
+                UpdateApplyStatus.ERFOLGREICH,
+                UpdateApplyStatus.FEHLGESCHLAGEN,
+                UpdateApplyStatus.ZURUECKGEROLLT,
+            ):
+                state.apply_status = UpdateApplyStatus.NONE
+                state.apply_message = ""
+                state.apply_requested_at = None
+                state.apply_requested_by_id = None
+                state.apply_finished_at = None
         else:
             state.latest_version = ""
             state.changelog = ""

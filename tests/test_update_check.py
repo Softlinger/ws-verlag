@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.config import settings
 from app.database import Base
-from app.models import UpdateState
+from app.models import UpdateApplyStatus, UpdateState
 from app.services import update_check
 
 
@@ -86,6 +86,56 @@ def test_handles_incomplete_manifest_gracefully(monkeypatch):
 
     assert "Manifest unvollstaendig" in state.check_error
     assert state.latest_version == ""
+
+
+def test_resets_apply_status_when_a_newer_version_appears_after_a_successful_install(monkeypatch):
+    """Regression: nach einem erfolgreich installierten Update muss die Update-Seite
+    fuer eine spaetere, neuere Version wieder den 'Ja, Update installieren'-Button
+    zeigen (apply_status == none), statt dauerhaft bei 'erfolgreich' zu bleiben."""
+    db = make_session()
+    state = update_check.get_or_create_update_state(db)
+    state.latest_version = "99.0.0"
+    state.apply_status = UpdateApplyStatus.ERFOLGREICH
+    db.commit()
+
+    monkeypatch.setattr(
+        update_check.httpx,
+        "get",
+        lambda *a, **k: FakeResponse(
+            {
+                "version": "99.0.1",
+                "image": "ghcr.io/weidlingersoft/ws-verlag",
+                "image_digest": "sha256:bb",
+            }
+        ),
+    )
+    state = update_check.check_for_update(db)
+
+    assert state.latest_version == "99.0.1"
+    assert state.apply_status == UpdateApplyStatus.NONE
+
+
+def test_keeps_apply_status_when_latest_version_is_unchanged(monkeypatch):
+    db = make_session()
+    state = update_check.get_or_create_update_state(db)
+    state.latest_version = "99.0.1"
+    state.apply_status = UpdateApplyStatus.ERFOLGREICH
+    db.commit()
+
+    monkeypatch.setattr(
+        update_check.httpx,
+        "get",
+        lambda *a, **k: FakeResponse(
+            {
+                "version": "99.0.1",
+                "image": "ghcr.io/weidlingersoft/ws-verlag",
+                "image_digest": "sha256:bb",
+            }
+        ),
+    )
+    state = update_check.check_for_update(db)
+
+    assert state.apply_status == UpdateApplyStatus.ERFOLGREICH
 
 
 def test_network_error_is_caught_not_raised(monkeypatch):

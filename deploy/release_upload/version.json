@@ -1,8 +1,8 @@
 {
-  "version": "0.3.3",
+  "version": "0.3.4",
   "release_date": "2026-09-04",
-  "changelog": "- Fehlerbehebung: Update-Karte blieb nach erfolgreicher Installation bis zur naechsten planmaessigen Pruefung mit veraltetem Status stehen, statt sofort zu verschwinden",
+  "changelog": "- Admin kann Passwort eines Benutzers zuruecksetzen (Benutzerverwaltung)\\n- Bankkonten und Zahlungsbedingungen in den Firmenstammdaten sind jetzt direkt bearbeitbar",
   "image": "ghcr.io/softlinger/ws-verlag",
-  "image_digest": "sha256:8dbf1e054db69d3865f70e8fe4474521ba8483344eccffb00c1364205452def9",
-  "min_upgrade_from": "0.3.2"
+  "image_digest": "sha256:86924105d69b04b80d26607689f65c4015bfa251222e669ed6ec5d25398b056d",
+  "min_upgrade_from": "0.3.3"
 }

@@ -1,8 +1,8 @@
 {
-  "version": "0.3.0",
-  "release_date": "2026-09-02",
-  "changelog": "- Neue Buchhaltungs-Berichte: Saldenliste und USt.-Voranmeldung (interne Aufstellung) fuer frei waehlbaren Zeitraum\\n- Export je Bericht als CSV oder PDF",
+  "version": "0.3.1",
+  "release_date": "2026-09-04",
+  "changelog": "- Statusmeldung nach E-Mail-Versand eines Belegs im Belegversand einblenden",
   "image": "ghcr.io/softlinger/ws-verlag",
-  "image_digest": "sha256:67f24f2903a3beaa2f6c4682a1f766ac7e86a4ba30e7dcae8ac83193dfa87e5f",
-  "min_upgrade_from": "0.2.3"
+  "image_digest": "sha256:ac020786810bc90c061a611e3d6ff0afb64ed6f4f82afe1b023f10d57b2dec30",
+  "min_upgrade_from": "0.3.0"
 }

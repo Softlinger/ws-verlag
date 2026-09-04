@@ -1,8 +1,8 @@
 {
-  "version": "0.3.1",
+  "version": "0.3.2",
   "release_date": "2026-09-04",
-  "changelog": "- Statusmeldung nach E-Mail-Versand eines Belegs im Belegversand einblenden",
+  "changelog": "- Fehlerbehebung: Update-Installieren-Button erschien nach einem erfolgreichen Update nicht mehr fuer spaeter erkannte neuere Versionen",
   "image": "ghcr.io/softlinger/ws-verlag",
-  "image_digest": "sha256:ac020786810bc90c061a611e3d6ff0afb64ed6f4f82afe1b023f10d57b2dec30",
-  "min_upgrade_from": "0.3.0"
+  "image_digest": "sha256:dde28023a61fd87a1a04e2b063805b91f58f1100d3b63946e6dcd2205ce589ac",
+  "min_upgrade_from": "0.3.1"
 }

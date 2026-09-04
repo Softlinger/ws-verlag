@@ -92,5 +92,18 @@ def report_result(payload: dict, db: Session = Depends(get_db)):
         state.apply_status = UpdateApplyStatus(status_value)
     state.apply_finished_at = datetime.utcnow()
     state.apply_message = str(payload.get("message", ""))[:1000]
+
+    if state.apply_status == UpdateApplyStatus.ERFOLGREICH:
+        # Dieser Aufruf laeuft bereits im neuen, erfolgreich getauschten Container -
+        # die soeben installierte Version ist jetzt __version__, also keine "neuere
+        # Version" mehr. Ohne diesen Reset bliebe die Update-Karte (inkl. veraltetem
+        # apply_status) bis zur naechsten planmaessigen Pruefung (Standard: 24h)
+        # stehen, statt sofort zu verschwinden.
+        state.latest_version = ""
+        state.changelog = ""
+        state.release_date = ""
+        state.image_ref = ""
+        state.image_digest = ""
+
     db.commit()
     return {"ok": True}

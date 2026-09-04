@@ -149,6 +149,7 @@ button.danger, .btn.danger { background: var(--color-danger); }
 .status-bezahlt { background: #e6f4ea; color: var(--color-success); }
 
 .error-message { color: var(--color-danger); font-weight: 600; }
+.success-message { color: var(--color-success); font-weight: 600; }
 
 .hint { color: var(--color-muted); font-size: 0.85rem; margin-top: -0.5rem; }
 .hint code { background: var(--color-surface); padding: 0.05rem 0.3rem; border-radius: 3px; }

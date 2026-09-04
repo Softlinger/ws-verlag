@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import require_login
 from app.database import get_db
-from app.models import Dunning, Invoice, InvoiceStatus, User
+from app.models import Dunning, Invoice, InvoiceStatus, MailStatus, User
 from app.routers.company import get_or_create_company
 from app.routers.invoices import _build_totals
 from app.services.dunning import get_level_setting, next_dunning_level, render_dunning_text
@@ -73,7 +73,7 @@ def send_dunning_mail(dunning_id: int, db: Session = Depends(get_db), user: User
 
     company = get_or_create_company(db)
     pdf_bytes = render_dunning_pdf(company=company, dunning=dunning, invoice=dunning.invoice, customer=dunning.invoice.customer)
-    send_document_mail(
+    mail_log = send_document_mail(
         db,
         company=company,
         related_type="dunning",
@@ -85,4 +85,5 @@ def send_dunning_mail(dunning_id: int, db: Session = Depends(get_db), user: User
         pdf_filename=f"Mahnung-{dunning.invoice.number}-{dunning.level}.pdf",
     )
     db.commit()
-    return RedirectResponse(f"/invoices/{dunning.invoice.id}", status_code=303)
+    mail_status = "sent" if mail_log.status == MailStatus.GESENDET else "failed"
+    return RedirectResponse(f"/invoices/{dunning.invoice.id}?mail={mail_status}", status_code=303)

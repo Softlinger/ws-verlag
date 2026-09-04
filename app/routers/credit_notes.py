@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import require_login
 from app.database import get_db
-from app.models import CreditNote, CreditNoteItem, DocumentType, Invoice, User
+from app.models import CreditNote, CreditNoteItem, DocumentType, Invoice, MailStatus, User
 from app.routers.company import get_or_create_company
 from app.services.mailer import send_document_mail
 from app.services.numbering import generate_next_number
@@ -103,7 +103,7 @@ def send_credit_note_mail(credit_note_id: int, db: Session = Depends(get_db), us
     pdf_bytes = render_credit_note_pdf(
         company=company, credit_note=credit_note, customer=credit_note.invoice.customer, items=credit_note.items, totals=totals
     )
-    send_document_mail(
+    mail_log = send_document_mail(
         db,
         company=company,
         related_type="credit_note",
@@ -115,4 +115,5 @@ def send_credit_note_mail(credit_note_id: int, db: Session = Depends(get_db), us
         pdf_filename=f"{credit_note.number}.pdf",
     )
     db.commit()
-    return RedirectResponse(f"/credit-notes/{credit_note.id}", status_code=303)
+    mail_status = "sent" if mail_log.status == MailStatus.GESENDET else "failed"
+    return RedirectResponse(f"/credit-notes/{credit_note.id}?mail={mail_status}", status_code=303)

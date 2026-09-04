@@ -248,7 +248,7 @@ def send_invoice_mail(invoice_id: int, db: Session = Depends(get_db), user: User
     pdf_bytes = render_invoice_pdf(
         company=company, invoice=invoice, customer=invoice.customer, items=invoice.items, totals=totals
     )
-    send_document_mail(
+    mail_log = send_document_mail(
         db,
         company=company,
         related_type="invoice",
@@ -260,7 +260,8 @@ def send_invoice_mail(invoice_id: int, db: Session = Depends(get_db), user: User
         pdf_filename=f"{invoice.number}.pdf",
     )
     db.commit()
-    return RedirectResponse(f"/invoices/{invoice.id}", status_code=303)
+    mail_status = "sent" if mail_log.status == MailStatus.GESENDET else "failed"
+    return RedirectResponse(f"/invoices/{invoice.id}?mail={mail_status}", status_code=303)
 
 
 @router.post("/{invoice_id}/payments")

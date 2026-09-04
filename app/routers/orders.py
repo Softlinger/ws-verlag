@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import require_login
 from app.database import get_db
-from app.models import Article, Customer, DocumentType, Invoice, Order, OrderItem, User
+from app.models import Article, Customer, DocumentType, Invoice, MailStatus, Order, OrderItem, User
 from app.routers.company import get_or_create_company
 from app.services.mailer import send_document_mail
 from app.services.numbering import generate_next_number
@@ -125,7 +125,7 @@ def send_order_mail(order_id: int, db: Session = Depends(get_db), user: User = D
         advertising_tax_applicable=order.advertising_tax_applicable,
     )
     pdf_bytes = render_order_pdf(company=company, order=order, customer=order.customer, items=order.items, totals=totals)
-    send_document_mail(
+    mail_log = send_document_mail(
         db,
         company=company,
         related_type="order",
@@ -140,7 +140,8 @@ def send_order_mail(order_id: int, db: Session = Depends(get_db), user: User = D
         pdf_filename=f"{order.number}.pdf",
     )
     db.commit()
-    return RedirectResponse(f"/orders/{order.id}", status_code=303)
+    mail_status = "sent" if mail_log.status == MailStatus.GESENDET else "failed"
+    return RedirectResponse(f"/orders/{order.id}?mail={mail_status}", status_code=303)
 
 
 @router.get("/{order_id}/edit")

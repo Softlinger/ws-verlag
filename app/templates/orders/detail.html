@@ -9,6 +9,12 @@
 {% if request.query_params.get("error") == "no_email" %}
 <p class="error-message" role="alert">Versand nicht m&ouml;glich: F&uuml;r diesen Kunden ist keine E-Mail-Adresse hinterlegt.</p>
 {% endif %}
+{% if request.query_params.get("mail") == "sent" %}
+<p class="success-message" role="status">Der Beleg wurde erfolgreich per E-Mail versendet.</p>
+{% endif %}
+{% if request.query_params.get("mail") == "failed" %}
+<p class="error-message" role="alert">Der Versand per E-Mail ist fehlgeschlagen. Details siehe <a href="/mail-log">Mail-Protokoll</a>.</p>
+{% endif %}
 
 <div class="card">
   <p>Kunde: <strong>{{ order.customer.name }}</strong>{% if order.customer.reverse_charge_applicable %} <em>(Reverse-Charge)</em>{% endif %}</p>

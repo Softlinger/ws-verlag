@@ -95,6 +95,7 @@
   {% endif %}
 
   <form method="post" action="/help/backups/run">
+    {{ csrf_field(request) }}
     <button type="submit">Jetzt sichern</button>
   </form>
 
@@ -112,6 +113,7 @@
         <td>
           <form method="post" action="/help/backups/restore"
                 onsubmit="return confirm('Aktuelle Datenbank wirklich mit {{ backup.name }} &uuml;berschreiben? Der jetzige Stand wird vorher automatisch gesichert.');">
+    {{ csrf_field(request) }}
             <input type="hidden" name="filename" value="{{ backup.name }}">
             <button type="submit" class="secondary">Wiederherstellen</button>
           </form>

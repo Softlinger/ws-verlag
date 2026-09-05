@@ -1,6 +1,6 @@
 import enum
 from datetime import date, datetime
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from sqlalchemy import (
     Boolean,
@@ -16,6 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.times import utcnow
 
 
 class UserRole(str, enum.Enum):
@@ -63,7 +64,10 @@ class User(Base):
     full_name: Mapped[str] = mapped_column(String(128))
     role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.SACHBEARBEITER)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    # Erhoeht bei Passwortwechsel/Deaktivierung -> macht vorher ausgestellte
+    # Session-Cookies ungueltig (Revocation), unabhaengig von ihrer Ablaufzeit.
+    password_version: Mapped[int] = mapped_column(default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
 class Company(Base):
@@ -186,7 +190,7 @@ class Customer(Base):
     bank_account_id: Mapped[int | None] = mapped_column(ForeignKey("bank_accounts.id"), nullable=True)
 
     active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
     payment_term: Mapped["PaymentTerm | None"] = relationship()
     bank_account: Mapped["BankAccount | None"] = relationship()
@@ -218,7 +222,7 @@ class Order(Base):
     order_date: Mapped[date] = mapped_column(Date, default=date.today)
     advertising_tax_applicable: Mapped[bool] = mapped_column(Boolean, default=False)
     note: Mapped[str] = mapped_column(String(500), default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
     customer: Mapped["Customer"] = relationship()
     items: Mapped[list["OrderItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")
@@ -239,7 +243,7 @@ class OrderItem(Base):
 
     @property
     def net_total(self) -> Decimal:
-        return (self.quantity * self.unit_price).quantize(Decimal("0.01"))
+        return (self.quantity * self.unit_price).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 class Invoice(Base):
@@ -256,7 +260,7 @@ class Invoice(Base):
     advertising_tax_applicable: Mapped[bool] = mapped_column(Boolean, default=False)
     advertising_tax_rate: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=Decimal("5.00"))
     bank_account_id: Mapped[int | None] = mapped_column(ForeignKey("bank_accounts.id"), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
     customer: Mapped["Customer"] = relationship()
     order: Mapped["Order | None"] = relationship()
@@ -281,7 +285,7 @@ class InvoiceItem(Base):
 
     @property
     def net_total(self) -> Decimal:
-        return (self.quantity * self.unit_price).quantize(Decimal("0.01"))
+        return (self.quantity * self.unit_price).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 class CreditNote(Base):
@@ -294,7 +298,7 @@ class CreditNote(Base):
     invoice_id: Mapped[int] = mapped_column(ForeignKey("invoices.id"))
     credit_note_date: Mapped[date] = mapped_column(Date, default=date.today)
     reason: Mapped[str] = mapped_column(String(500), default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
     invoice: Mapped["Invoice"] = relationship()
     items: Mapped[list["CreditNoteItem"]] = relationship(back_populates="credit_note", cascade="all, delete-orphan")
@@ -314,7 +318,7 @@ class CreditNoteItem(Base):
 
     @property
     def net_total(self) -> Decimal:
-        return (self.quantity * self.unit_price).quantize(Decimal("0.01"))
+        return (self.quantity * self.unit_price).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 class Payment(Base):
@@ -335,11 +339,14 @@ class Dunning(Base):
     """Ausgestellte Mahnung zu einer Rechnung, Stufe 1-3, manuell ausgeloest."""
 
     __tablename__ = "dunnings"
+    # Genau eine Mahnung je Stufe und Rechnung (verhindert doppelte Mahnstufen bei
+    # gleichzeitigem Klick zweier Sitzungen).
+    __table_args__ = (UniqueConstraint("invoice_id", "level", name="uq_dunning_invoice_level"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     invoice_id: Mapped[int] = mapped_column(ForeignKey("invoices.id"))
     level: Mapped[int] = mapped_column()
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     due_date: Mapped[date] = mapped_column(Date)
     fee_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=Decimal("0.00"))
     rendered_text: Mapped[str] = mapped_column(Text)
@@ -386,4 +393,4 @@ class MailLog(Base):
     subject: Mapped[str] = mapped_column(String(255))
     status: Mapped[MailStatus] = mapped_column(Enum(MailStatus))
     error_message: Mapped[str] = mapped_column(String(500), default="")
-    sent_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    sent_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

@@ -25,6 +25,7 @@
   <p><img src="/static/{{ company.logo_path }}" alt="Aktuelles Firmenlogo" style="max-width: 270px; max-height: 150px;"></p>
   {% endif %}
   <form method="post" action="/company/logo" enctype="multipart/form-data">
+    {{ csrf_field(request) }}
     <label for="logo_file">Logo-Datei (JPG)</label>
     <input id="logo_file" name="logo" type="file" accept=".jpg,.jpeg" required>
     <p><button type="submit" style="margin-top: 1rem;">Hochladen</button></p>
@@ -34,6 +35,7 @@
 <div class="card" id="allgemein">
   <h2>Allgemein & SMTP</h2>
   <form method="post" action="/company/update">
+    {{ csrf_field(request) }}
     <label for="name">Firmenname</label>
     <input id="name" name="name" required value="{{ company.name }}">
     <label for="street">Stra&szlig;e</label>
@@ -90,6 +92,7 @@
       <tr>
         <td colspan="6">
           <form method="post" action="/company/bank-accounts/{{ account.id }}/update" style="display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center;">
+    {{ csrf_field(request) }}
             <input name="label" value="{{ account.label }}" required aria-label="Label" style="width:auto;">
             <input name="iban" value="{{ account.iban }}" required aria-label="IBAN" style="width:auto;">
             <input name="bic" value="{{ account.bic }}" aria-label="BIC" style="width:auto;">
@@ -107,6 +110,7 @@
     </tbody>
   </table>
   <form method="post" action="/company/bank-accounts/new">
+    {{ csrf_field(request) }}
     <label for="label">Label</label>
     <input id="label" name="label" required>
     <label for="iban">IBAN</label>
@@ -132,6 +136,7 @@
       <tr>
         <td colspan="4">
           <form method="post" action="/company/payment-terms/{{ term.id }}/update" style="display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center;">
+    {{ csrf_field(request) }}
             <input name="name" value="{{ term.name }}" required aria-label="Name" style="width:auto;">
             <input name="days_due" type="number" value="{{ term.days_due }}" aria-label="Frist (Tage)" style="width:auto;">
             <input name="description" value="{{ term.description }}" aria-label="Beschreibung" style="width:auto;">
@@ -149,6 +154,7 @@
     </tbody>
   </table>
   <form method="post" action="/company/payment-terms/new">
+    {{ csrf_field(request) }}
     <label for="pt_name">Name</label>
     <input id="pt_name" name="name" required>
     <label for="days_due">Frist (Tage)</label>
@@ -169,6 +175,7 @@
   <h2>Belegnummernkreise</h2>
   {% for number_range in number_ranges %}
   <form method="post" action="/company/number-ranges/{{ number_range.id }}/update">
+    {{ csrf_field(request) }}
     <h3>{{ number_range.document_type.value|capitalize }}</h3>
     <label for="prefix_{{ number_range.id }}">Pr&auml;fix</label>
     <input id="prefix_{{ number_range.id }}" name="prefix" value="{{ number_range.prefix }}">
@@ -188,6 +195,7 @@
   <h2>Mahnstufen</h2>
   {% for level in dunning_levels %}
   <form method="post" action="/company/dunning-levels/{{ level.id }}/update">
+    {{ csrf_field(request) }}
     <h3>{{ level.level }}. Mahnstufe</h3>
     <label for="due_days_{{ level.id }}">Frist (Tage)</label>
     <input id="due_days_{{ level.id }}" name="due_days" type="number" value="{{ level.due_days }}">

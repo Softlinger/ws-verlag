@@ -9,6 +9,7 @@ from app.auth import require_admin, require_login
 from app.config import settings
 from app.models import User, UserRole
 from app.templating import templates
+from app.times import utcnow
 
 router = APIRouter(prefix="/help", tags=["help"])
 
@@ -64,7 +65,7 @@ def trigger_backup(user: User = Depends(require_admin)):
     (analog zum Update-Mechanismus in app/routers/updates.py)."""
     signal_dir = Path(settings.update_signal_dir)
     signal_dir.mkdir(parents=True, exist_ok=True)
-    payload = {"requested_at": datetime.utcnow().isoformat(), "requested_by": user.username}
+    payload = {"requested_at": utcnow().isoformat(), "requested_by": user.username}
     (signal_dir / "backup_request.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return RedirectResponse("/help?backup_requested=1#sicherung", status_code=303)
 
@@ -81,7 +82,7 @@ def trigger_restore(filename: str = Form(...), user: User = Depends(require_admi
 
     signal_dir = Path(settings.update_signal_dir)
     signal_dir.mkdir(parents=True, exist_ok=True)
-    payload = {"filename": safe_name, "requested_at": datetime.utcnow().isoformat(), "requested_by": user.username}
+    payload = {"filename": safe_name, "requested_at": utcnow().isoformat(), "requested_by": user.username}
     (signal_dir / "restore_request.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return RedirectResponse("/help?restore_requested=1#sicherung", status_code=303)
 

@@ -12,13 +12,14 @@ from app.routers.company import get_or_create_company
 from app.services.pdf import render_balance_list_pdf, render_vat_summary_pdf
 from app.services.reporting import balance_list_to_csv, get_balance_list, get_vat_summary, vat_summary_to_csv
 from app.templating import templates
+from app.times import today_vienna
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
 
 def _default_period() -> tuple[date, date]:
-    """Aktueller Monat, falls kein Zeitraum angegeben wurde."""
-    today = date.today()
+    """Aktueller Monat (Wiener Zeit), falls kein Zeitraum angegeben wurde."""
+    today = today_vienna()
     last_day = calendar.monthrange(today.year, today.month)[1]
     return date(today.year, today.month, 1), date(today.year, today.month, last_day)
 

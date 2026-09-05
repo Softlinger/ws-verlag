@@ -47,5 +47,8 @@ def change_password_submit(
         )
 
     user.password_hash = hash_password(new_password)
+    # Session-Cookies enthalten password_version; Erhoetzen entwertet alle bisher
+    # ausgestellten Cookies - ein Angreifer mit gestohlenem Cookie ist sofort aussen vor.
+    user.password_version = (user.password_version or 0) + 1
     db.commit()
     return templates.TemplateResponse(request, "account/password.html", {"error": None, "success": True})

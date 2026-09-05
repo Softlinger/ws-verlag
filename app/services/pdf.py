@@ -410,10 +410,11 @@ def render_balance_list_pdf(*, company: Company, saldenliste) -> bytes:
     for kunde in saldenliste.kunden:
         elements.append(Paragraph(f"<b>{kunde.customer.name}</b>", styles["Heading3"]))
         data = [["Belegart", "Nummer", "Datum", "Betrag", "Bezahlt", "Offen"]]
+        labels = {"rechnung": "Rechnung", "gutschrift": "Gutschrift", "mahngebuehr": "Mahngebuehr (USt-frei)"}
         for zeile in kunde.zeilen:
             data.append(
                 [
-                    "Rechnung" if zeile.kind == "rechnung" else "Gutschrift",
+                    labels.get(zeile.kind, zeile.kind),
                     zeile.number,
                     zeile.beleg_date.strftime("%d.%m.%Y"),
                     f"{zeile.gross_total:.2f}",
@@ -449,7 +450,7 @@ def render_vat_summary_pdf(*, company: Company, summary) -> bytes:
     for rate in sorted(summary.net_by_rate):
         data.append([f"{rate}% USt.", f"{summary.net_by_rate[rate]:.2f}", f"{summary.vat_by_rate.get(rate, Decimal('0.00')):.2f}"])
     data.append(["Reverse-Charge (0% USt.)", f"{summary.reverse_charge_net:.2f}", "0.00"])
-    data.append(["Werbesteuer", f"{summary.advertising_tax_amount:.2f}", ""])
+    data.append(["davon Werbesteuer (in Netto-Basis enthalten)", f"{summary.advertising_tax_amount:.2f}", ""])
     data.append(["Gesamt Netto", f"{summary.net_total:.2f}", ""])
     data.append(["Gesamt USt.", "", f"{summary.vat_total:.2f}"])
     data.append(["Gesamt Brutto", f"{summary.gross_total:.2f}", ""])

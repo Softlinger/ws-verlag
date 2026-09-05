@@ -30,6 +30,7 @@
   <p>
     <a class="btn" href="/credit-notes/{{ credit_note.id }}/pdf" target="_blank">PDF ansehen</a>
     <form style="display:inline" method="post" action="/credit-notes/{{ credit_note.id }}/send">
+    {{ csrf_field(request) }}
       <button type="submit" class="secondary" {{ "disabled" if not credit_note.invoice.customer.email.strip() else "" }}>Per E-Mail senden</button>
     </form>
     {% if not credit_note.invoice.customer.email.strip() %}<span> (Kunde hat keine E-Mail-Adresse)</span>{% endif %}

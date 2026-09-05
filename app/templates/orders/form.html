@@ -4,6 +4,7 @@
 <h1>{{ "Auftrag " ~ order.number ~ " bearbeiten" if order else "Neuer Auftrag" }}</h1>
 <div class="card">
   <form method="post" action="{{ '/orders/' ~ order.id ~ '/edit' if order else '/orders/new' }}">
+    {{ csrf_field(request) }}
     <label for="customer_id">Kunde</label>
     <select id="customer_id" name="customer_id" required>
       {% for customer in customers %}

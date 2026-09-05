@@ -1,18 +1,10 @@
 import httpx
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 from app.config import settings
-from app.database import Base
 from app.models import UpdateApplyStatus, UpdateState
 from app.services import update_check
-
-
-def make_session():
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(bind=engine)
-    return sessionmaker(bind=engine)()
+from tests._db import make_session
 
 
 class FakeResponse:

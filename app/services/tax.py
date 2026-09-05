@@ -16,6 +16,7 @@ class TaxTotals(NamedTuple):
     vat_total: Decimal
     gross_total: Decimal
     vat_breakdown: dict[int, Decimal]  # USt.-Satz -> Steuerbetrag
+    base_by_rate: dict[int, Decimal]  # USt.-Satz -> Bemessungsgrundlage (Netto + anteilige Werbesteuer)
 
 
 def _round(value: Decimal) -> Decimal:
@@ -60,12 +61,14 @@ def calculate_totals(
 
     subtotal = _round(net_total + advertising_tax_amount)
 
+    base_by_rate: dict[int, Decimal] = {}
     vat_breakdown: dict[int, Decimal] = {}
-    if not reverse_charge:
-        for rate, rate_net in net_by_rate.items():
-            # Anteiliger Werbesteuer-Anteil dieses USt.-Satzes an der Bemessungsgrundlage.
-            share = (rate_net / net_total) if net_total else Decimal("0")
-            rate_base = _round(rate_net + advertising_tax_amount * share)
+    for rate, rate_net in net_by_rate.items():
+        # Anteiliger Werbesteuer-Anteil dieses USt.-Satzes an der Bemessungsgrundlage.
+        share = (rate_net / net_total) if net_total else Decimal("0")
+        rate_base = _round(rate_net + advertising_tax_amount * share)
+        base_by_rate[rate] = rate_base
+        if not reverse_charge:
             vat_breakdown[rate] = _round(rate_base * Decimal(rate) / Decimal("100"))
 
     vat_total = _round(sum(vat_breakdown.values(), Decimal("0.00")))
@@ -78,4 +81,5 @@ def calculate_totals(
         vat_total=vat_total,
         gross_total=gross_total,
         vat_breakdown=vat_breakdown,
+        base_by_rate=base_by_rate,
     )

@@ -1,8 +1,8 @@
+import hmac
 import json
-from datetime import datetime
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
@@ -12,6 +12,7 @@ from app.database import get_db
 from app.models import UpdateApplyStatus, User
 from app.services.update_check import check_for_update, get_or_create_update_state
 from app.templating import templates
+from app.times import utcnow
 from app.version import __version__
 
 router = APIRouter(prefix="/updates", tags=["updates"])
@@ -42,7 +43,7 @@ def apply_update(db: Session = Depends(get_db), user: User = Depends(require_adm
         return RedirectResponse("/updates", status_code=303)
 
     state.apply_status = UpdateApplyStatus.ANGEFORDERT
-    state.apply_requested_at = datetime.utcnow()
+    state.apply_requested_at = utcnow()
     state.apply_requested_by_id = user.id
     state.apply_message = ""
     db.commit()
@@ -81,16 +82,22 @@ def status_json(db: Session = Depends(get_db)):
 
 
 @router.post("/report")
-def report_result(payload: dict, db: Session = Depends(get_db)):
+def report_result(request: Request, payload: dict, db: Session = Depends(get_db)):
     """Vom Updater-Container aufgerufen, um das Ergebnis (Erfolg/Fehlschlag/Rollback)
-    zurueckzumelden. Bewusst ohne Admin-Login (Updater-Container hat keine Session),
-    daher nur lokal erreichbar halten (siehe docker-compose.yml: kein Port-Publish,
-    nur internes Docker-Netzwerk)."""
+    zurueckzumelden. Der Updater hat keine Admin-Session, deshalb kein Login - dafuer
+    ein gemeinsames Geheimnis: Header X-Updater-Token muss settings.updater_token
+    treffen, damit nicht irgendein LAN-Teilnehmer den Update-Status manipulieren kann.
+    Ist updater_token leer (z. B. lokale Entwicklung), ist die Pruefung deaktiviert."""
+    if settings.updater_token:
+        provided = request.headers.get("x-updater-token", "")
+        if not hmac.compare_digest(provided, settings.updater_token):
+            raise HTTPException(status_code=403, detail="Ungueltiges Updater-Token.")
+
     state = get_or_create_update_state(db)
     status_value = payload.get("status")
     if status_value in {s.value for s in UpdateApplyStatus}:
         state.apply_status = UpdateApplyStatus(status_value)
-    state.apply_finished_at = datetime.utcnow()
+    state.apply_finished_at = utcnow()
     state.apply_message = str(payload.get("message", ""))[:1000]
 
     if state.apply_status == UpdateApplyStatus.ERFOLGREICH:

@@ -1,16 +1,15 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from types import SimpleNamespace
 
-from app.database import Base
 from app.models import UpdateApplyStatus
 from app.routers.updates import report_result
 from app.services.update_check import get_or_create_update_state
+from tests._db import make_session
 
 
-def make_session():
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(bind=engine)
-    return sessionmaker(bind=engine)()
+def _req():
+    # report_result prueft den Header nur, wenn settings.updater_token gesetzt ist
+    # (in Tests leer -> uebersprungen). Ein leeres headers-Dict genuegt.
+    return SimpleNamespace(headers={})
 
 
 def test_successful_report_clears_the_now_outdated_update_card():
@@ -26,7 +25,7 @@ def test_successful_report_clears_the_now_outdated_update_card():
     state.image_digest = "sha256:aa"
     db.commit()
 
-    report_result({"status": "erfolgreich", "message": "ok"}, db)
+    report_result(_req(), {"status": "erfolgreich", "message": "ok"}, db)
 
     assert state.apply_status == UpdateApplyStatus.ERFOLGREICH
     assert state.latest_version == ""
@@ -44,7 +43,7 @@ def test_failed_report_keeps_the_update_card_for_a_retry():
     state.image_digest = "sha256:aa"
     db.commit()
 
-    report_result({"status": "fehlgeschlagen", "message": "Pull fehlgeschlagen"}, db)
+    report_result(_req(), {"status": "fehlgeschlagen", "message": "Pull fehlgeschlagen"}, db)
 
     assert state.apply_status == UpdateApplyStatus.FEHLGESCHLAGEN
     assert state.latest_version == "0.3.1"

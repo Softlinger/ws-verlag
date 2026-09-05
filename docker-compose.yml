@@ -2,6 +2,11 @@
 #   1. .env aus .env.example anlegen und Werte setzen (SECRET_KEY unbedingt!).
 #   2. `docker compose up -d` im Synology Container Manager oder per SSH.
 # Details und Sicherheitshinweise: siehe README-DEPLOYMENT.md.
+#
+# Test-Suite (laeuft NUR bei explizitem Aufruf, nicht bei `docker compose up -d`):
+#   docker compose --profile test run --rm test
+# Baut den `test`-Stage aus dem Dockerfile und fuehrt pytest gegen eine eigene
+# Wegwerf-MariaDB (db-test) aus; --rm entfernt den Test-Container nach dem Lauf.
 
 services:
   app:
@@ -11,6 +16,9 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: mysql+pymysql://ws_verlag:${MARIADB_PASSWORD}@mariadb:3306/ws_verlag
+      # Gemeinsames Secret mit dem Updater-Container: sichert /updates/report gegen
+      #Manipulation durch andere LAN-Teilnehmer ab (siehe app/routers/updates.py).
+      UPDATER_TOKEN: ${UPDATER_TOKEN:-}
     volumes:
       # Beschreibbar: die App schreibt hierher update_request.json/backup_request.json/
       # restore_request.json (siehe app/routers/updates.py, app/routers/help.py) und liest
@@ -69,10 +77,46 @@ services:
       # ein "docker login" auf dem Host reicht nicht, siehe Kommentar in updater/updater.py.
       GHCR_USERNAME: ${GHCR_USERNAME:-}
       GHCR_TOKEN: ${GHCR_TOKEN:-}
+      # Muss zum app-seitigen UPDATER_TOKEN passen (Header X-Updater-Token).
+      UPDATER_TOKEN: ${UPDATER_TOKEN:-}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - update_signal:/update-signal
       - ./backups:/backups
+    networks:
+      - ws-verlag-net
+
+  # ---- Test-Profile (nur mit `--profile test` aktiv, laeuft NICHT bei `up -d`) ----
+  db-test:
+    profiles: ["test"]
+    image: mariadb:11
+    container_name: ws-verlag-dbtest
+    # Kein volume -> Zustandslose Wegwerf-DB, beim naechsten Lauf wieder leer.
+    environment:
+      MARIADB_DATABASE: ws_verlag_test
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "1"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - ws-verlag-net
+
+  test:
+    profiles: ["test"]
+    build:
+      context: .
+      target: test
+    container_name: ws-verlag-test
+    # Keine Ports/Volumes/Socket - fuehrt nur pytest aus und beendet sich danach.
+    environment:
+      TEST_DATABASE_URL: mysql+pymysql://root@db-test:3306/ws_verlag_test
+      DATABASE_URL: mysql+pymysql://root@db-test:3306/ws_verlag_test
+    depends_on:
+      db-test:
+        condition: service_healthy
     networks:
       - ws-verlag-net
 

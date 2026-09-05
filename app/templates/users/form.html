@@ -4,6 +4,7 @@
 <h1>Neuer Benutzer</h1>
 <div class="card">
   <form method="post" action="/users/new">
+    {{ csrf_field(request) }}
     <label for="username">Benutzername</label>
     <input id="username" name="username" required autocomplete="username">
     <label for="full_name">Voller Name</label>

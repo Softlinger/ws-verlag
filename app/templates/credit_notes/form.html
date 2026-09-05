@@ -4,6 +4,7 @@
 <h1>Neue Gutschrift</h1>
 <div class="card">
   <form method="post" action="/credit-notes/new">
+    {{ csrf_field(request) }}
     <label for="invoice_id">Rechnung</label>
     <select id="invoice_id" name="invoice_id" required>
       {% for inv in invoices %}

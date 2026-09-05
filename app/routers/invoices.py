@@ -24,7 +24,7 @@ from app.models import (
 from app.routers.company import get_or_create_company
 from app.services.mailer import send_document_mail
 from app.services.numbering import generate_next_number
-from app.services.payments import record_payment
+from app.services.payments import record_payment, recompute_invoice_status, total_open
 from app.services.pdf import render_invoice_pdf
 from app.services.tax import calculate_totals
 from app.templating import templates
@@ -150,7 +150,7 @@ def view_invoice(invoice_id: int, request: Request, db: Session = Depends(get_db
             "invoice": invoice,
             "totals": totals,
             "paid_total": paid_total,
-            "open_amount": totals.gross_total - paid_total,
+            "open_amount": total_open(db, invoice),  # inkl. USt-freier Mahngebuehren
             "is_sent": _invoice_is_sent(db, invoice.id),
         },
     )
@@ -200,7 +200,9 @@ def update_invoice(
     invoice.customer_id = customer_id
     invoice.invoice_date = invoice_date
     invoice.due_date = invoice_date + timedelta(days=payment_term_days)
-    invoice.reverse_charge = customer.reverse_charge_applicable
+    # reverse_charge wird NICHT erneut aus dem Kunden abgeleitet: es ist bei Anlage
+    # eingefroren und darf einen bereits nummerierten Beleg nachtraeglich nicht von
+    # 0 % auf steuerpflichtig (oder umgekehrt) kippen. Korrektur nur via Storno/Gutschrift.
     invoice.advertising_tax_applicable = advertising_tax_applicable
     invoice.bank_account_id = int(bank_account_id) if bank_account_id else customer.bank_account_id
 
@@ -218,6 +220,9 @@ def update_invoice(
                 vat_rate=vat_rate[idx] if idx < len(vat_rate) else 20,
             )
         )
+    # Nach inhaltlicher Aenderung (Brutto-Summe) Zahlungsstatus neu ableiten,
+    # sonst bleibt z. B. "bezahlt" stehen, obwohl der Betrag jetzt hoeher ist.
+    recompute_invoice_status(db, invoice)
     db.commit()
     return RedirectResponse(f"/invoices/{invoice.id}", status_code=303)
 

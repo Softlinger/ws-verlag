@@ -10,6 +10,7 @@
   <p class="error-message" role="alert">{{ state.check_error }}</p>
   {% endif %}
   <form method="post" action="/updates/check">
+    {{ csrf_field(request) }}
     <button type="submit" class="secondary">Jetzt auf Updates pr&uuml;fen</button>
   </form>
 </div>
@@ -29,6 +30,7 @@
      oder der anschlie&szlig;ende Funktionstest fehl, wird automatisch auf die aktuelle
      Version zur&uuml;ckgesetzt.</p>
   <form method="post" action="/updates/apply">
+    {{ csrf_field(request) }}
     <button type="submit">Ja, Update installieren</button>
   </form>
   {% elif state.apply_status.value == "angefordert" %}
@@ -40,11 +42,13 @@
   {% elif state.apply_status.value == "fehlgeschlagen" %}
   <p class="error-message" role="alert">Installation fehlgeschlagen: {{ state.apply_message }}</p>
   <form method="post" action="/updates/apply">
+    {{ csrf_field(request) }}
     <button type="submit" class="secondary">Erneut versuchen</button>
   </form>
   {% elif state.apply_status.value == "zurueckgerollt" %}
   <p class="error-message" role="alert">Installation fehlgeschlagen, automatisch auf die vorherige Version zur&uuml;ckgesetzt: {{ state.apply_message }}</p>
   <form method="post" action="/updates/apply">
+    {{ csrf_field(request) }}
     <button type="submit" class="secondary">Erneut versuchen</button>
   </form>
   {% endif %}

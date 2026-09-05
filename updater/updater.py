@@ -14,7 +14,7 @@ WICHTIG - Sicherheitsmodell:
 
 Ablauf pro Zyklus:
   1. update_request.json im Signal-Verzeichnis lesen (vom Hauptcontainer geschrieben).
-  2. Backup der Datenbank anlegen (SQLite-Datei kopieren oder MariaDB-Dump per docker exec).
+  2. Backup der Datenbank anlegen (MariaDB-Dump per docker exec).
   3. Neues Image per Digest pullen.
   4. Laufenden App-Container umbenennen (Rollback-Kandidat), neuen Container mit identischer
      Konfiguration (Env/Mounts/Netzwerk) aus dem neuen Image starten.
@@ -43,7 +43,6 @@ Zusaetzlich: Wiederherstellung (Restore) einer Sicherung, ausgeloest per restore
 import io
 import json
 import os
-import shutil
 import tarfile
 import time
 from datetime import datetime, timezone
@@ -66,9 +65,11 @@ HEALTHCHECK_URL = os.environ.get("HEALTHCHECK_URL", "http://ws-verlag-app:8000/h
 REPORT_URL = os.environ.get("REPORT_URL", "http://ws-verlag-app:8000/updates/report")
 APP_CONTAINER_NAME = os.environ.get("APP_CONTAINER_NAME", "ws-verlag-app")
 ROLLBACK_SUFFIX = "-rollback"
+# Gemeinsames Geheimnis mit der App: wird beim Report an /updates/report als Header
+# X-Updater-Token mitgegeben (siehe app/routers/updates.py). Leer => App prueft nicht.
+UPDATER_TOKEN = os.environ.get("UPDATER_TOKEN", "")
 
-# Backup-Konfiguration: entweder SQLite-Datei-Pfad ODER MariaDB-Container-Name + Zugangsdaten.
-SQLITE_DB_PATH = os.environ.get("SQLITE_DB_PATH", "")
+# Backup-Konfiguration: MariaDB-Container-Name + Zugangsdaten (SQLite nicht mehr unterstuetzt).
 MARIADB_CONTAINER_NAME = os.environ.get("MARIADB_CONTAINER_NAME", "")
 MARIADB_DATABASE = os.environ.get("MARIADB_DATABASE", "ws_verlag")
 MARIADB_USER = os.environ.get("MARIADB_USER", "root")
@@ -89,8 +90,9 @@ def log(message: str) -> None:
 
 
 def report(status: str, message: str = "") -> None:
+    headers = {"X-Updater-Token": UPDATER_TOKEN} if UPDATER_TOKEN else {}
     try:
-        requests.post(REPORT_URL, json={"status": status, "message": message}, timeout=10)
+        requests.post(REPORT_URL, json={"status": status, "message": message}, headers=headers, timeout=10)
     except requests.RequestException as exc:
         log(f"Konnte Ergebnis nicht an die App melden: {exc}")
 
@@ -99,36 +101,30 @@ def create_backup() -> Path:
     BACKUP_DIR.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
 
-    if SQLITE_DB_PATH and Path(SQLITE_DB_PATH).exists():
-        target = BACKUP_DIR / f"ws_verlag-{timestamp}.db"
-        shutil.copy2(SQLITE_DB_PATH, target)
-        log(f"SQLite-Backup angelegt: {target}")
-        return target
+    if not MARIADB_CONTAINER_NAME:
+        raise RuntimeError("MARIADB_CONTAINER_NAME nicht konfiguriert - kein Backup moeglich.")
 
-    if MARIADB_CONTAINER_NAME:
-        target = BACKUP_DIR / f"ws_verlag-{timestamp}.sql"
-        dump_container = client.containers.get(MARIADB_CONTAINER_NAME)
+    target = BACKUP_DIR / f"ws_verlag-{timestamp}.sql"
+    dump_container = client.containers.get(MARIADB_CONTAINER_NAME)
 
-        # "mariadb-dump" ist der aktuelle Binaername (mariadb:11-Image); "mysqldump" als
-        # Fallback fuer aeltere Images, die noch den klassischen Namen mitbringen (gleiches
-        # Muster wie beim Restore weiter unten mit "mariadb"/"mysql").
-        last_exit_code = 127
-        output = b""
-        for dump_bin in ("mariadb-dump", "mysqldump"):
-            exit_code, output = dump_container.exec_run(
-                [dump_bin, f"-u{MARIADB_USER}", f"-p{MARIADB_PASSWORD}", MARIADB_DATABASE]
-            )
-            last_exit_code = exit_code
-            if exit_code == 0:
-                break
+    # "mariadb-dump" ist der aktuelle Binaername (mariadb:11-Image); "mysqldump" als
+    # Fallback fuer aeltere Images, die noch den klassischen Namen mitbringen (gleiches
+    # Muster wie beim Restore weiter unten mit "mariadb"/"mysql").
+    last_exit_code = 127
+    output = b""
+    for dump_bin in ("mariadb-dump", "mysqldump"):
+        exit_code, output = dump_container.exec_run(
+            [dump_bin, f"-u{MARIADB_USER}", f"-p{MARIADB_PASSWORD}", MARIADB_DATABASE]
+        )
+        last_exit_code = exit_code
+        if exit_code == 0:
+            break
 
-        if last_exit_code != 0:
-            raise RuntimeError(f"mariadb-dump/mysqldump fehlgeschlagen (exit {last_exit_code})")
-        target.write_bytes(output)
-        log(f"MariaDB-Backup angelegt: {target}")
-        return target
-
-    raise RuntimeError("Weder SQLITE_DB_PATH noch MARIADB_CONTAINER_NAME konfiguriert - kein Backup moeglich.")
+    if last_exit_code != 0:
+        raise RuntimeError(f"mariadb-dump/mysqldump fehlgeschlagen (exit {last_exit_code})")
+    target.write_bytes(output)
+    log(f"MariaDB-Backup angelegt: {target}")
+    return target
 
 
 def _backup_files() -> list[Path]:
@@ -188,46 +184,40 @@ def restore_backup(filename: str) -> None:
     log(f"Stelle Sicherung wieder her: {filename}")
     run_backup_cycle()  # Sicherheitsnetz: Stand vor dem Restore bleibt selbst als Backup erhalten.
 
-    if SQLITE_DB_PATH:
-        shutil.copy2(backup_file, SQLITE_DB_PATH)
-        log(f"SQLite-Datenbank aus {filename} wiederhergestellt.")
-        return
+    if not MARIADB_CONTAINER_NAME:
+        raise RuntimeError("MARIADB_CONTAINER_NAME nicht konfiguriert - keine Wiederherstellung moeglich.")
 
-    if MARIADB_CONTAINER_NAME:
-        dump_container = client.containers.get(MARIADB_CONTAINER_NAME)
-        _copy_file_into_container(dump_container, backup_file, "/tmp")
-        # Konstanter Zielname im Container, damit der Shell-Befehl unten keinen
-        # variablen Dateinamen enthalten muss.
-        dump_container.exec_run(["mv", f"/tmp/{backup_file.name}", "/tmp/restore_source"])
+    dump_container = client.containers.get(MARIADB_CONTAINER_NAME)
+    _copy_file_into_container(dump_container, backup_file, "/tmp")
+    # Konstanter Zielname im Container, damit der Shell-Befehl unten keinen
+    # variablen Dateinamen enthalten muss.
+    dump_container.exec_run(["mv", f"/tmp/{backup_file.name}", "/tmp/restore_source"])
 
-        # Zugangsdaten bewusst als Umgebungsvariablen statt String-Interpolation in den
-        # Shell-Befehl, damit Sonderzeichen im Passwort keine Shell-Injection ermoeglichen.
-        env = {"DB_USER": MARIADB_USER, "DB_PASSWORD": MARIADB_PASSWORD, "DB_NAME": MARIADB_DATABASE}
-        restore_commands = [
-            'mariadb -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < /tmp/restore_source',
-            'mysql -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < /tmp/restore_source',
-        ]
+    # Zugangsdaten bewusst als Umgebungsvariablen statt String-Interpolation in den
+    # Shell-Befehl, damit Sonderzeichen im Passwort keine Shell-Injection ermoeglichen.
+    env = {"DB_USER": MARIADB_USER, "DB_PASSWORD": MARIADB_PASSWORD, "DB_NAME": MARIADB_DATABASE}
+    restore_commands = [
+        'mariadb -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < /tmp/restore_source',
+        'mysql -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < /tmp/restore_source',
+    ]
 
-        last_exit_code = 127
-        last_output = b""
-        for command in restore_commands:
-            exit_code, output = dump_container.exec_run(["sh", "-c", command], environment=env)
-            last_exit_code = exit_code
-            last_output = output
-            if exit_code == 0:
-                break
+    last_exit_code = 127
+    last_output = b""
+    for command in restore_commands:
+        exit_code, output = dump_container.exec_run(["sh", "-c", command], environment=env)
+        last_exit_code = exit_code
+        last_output = output
+        if exit_code == 0:
+            break
 
-        dump_container.exec_run(["rm", "-f", "/tmp/restore_source"])
+    dump_container.exec_run(["rm", "-f", "/tmp/restore_source"])
 
-        if last_exit_code != 0:
-            raise RuntimeError(
-                f"Wiederherstellung fehlgeschlagen (exit {last_exit_code}): "
-                f"{last_output.decode(errors='replace')[:300]}"
-            )
-        log(f"MariaDB-Datenbank aus {filename} wiederhergestellt.")
-        return
-
-    raise RuntimeError("Weder SQLITE_DB_PATH noch MARIADB_CONTAINER_NAME konfiguriert - keine Wiederherstellung moeglich.")
+    if last_exit_code != 0:
+        raise RuntimeError(
+            f"Wiederherstellung fehlgeschlagen (exit {last_exit_code}): "
+            f"{last_output.decode(errors='replace')[:300]}"
+        )
+    log(f"MariaDB-Datenbank aus {filename} wiederhergestellt.")
 
 
 def pull_new_image(image_ref: str, image_digest: str) -> str:

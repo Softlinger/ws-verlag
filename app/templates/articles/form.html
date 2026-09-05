@@ -4,6 +4,7 @@
 <h1>{{ "Artikel bearbeiten" if article else "Neuer Artikel" }}</h1>
 <div class="card">
   <form method="post" action="{{ '/articles/' ~ article.id ~ '/edit' if article else '/articles/new' }}">
+    {{ csrf_field(request) }}
     <label for="name">Name</label>
     <input id="name" name="name" required value="{{ article.name if article else '' }}">
 

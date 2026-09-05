@@ -7,7 +7,7 @@ Belegversand per E-Mail.
 ## Stack
 
 - Backend: Python 3.11, FastAPI
-- DB: SQLAlchemy, MariaDB (produktiv) / SQLite (lokale Entwicklung, Standard)
+- DB: SQLAlchemy + MariaDB (SQLite wird nicht mehr unterstützt — nur noch MariaDB)
 - Frontend: Server-Rendered Jinja2-Templates + minimalem Vanilla-JS (keine SPA)
 - Auth: Session-Cookie, Passwort-Hashing mit bcrypt
 - PDF: reportlab
@@ -22,10 +22,15 @@ python -m pip install --user poetry
 # Abhaengigkeiten installieren
 poetry install
 
-# Optional: .env aus Vorlage anlegen und Werte anpassen (SECRET_KEY unbedingt setzen!)
+# Datenbank: nur noch MariaDB (kein SQLite). Einfachster Weg ist Docker:
+#   docker compose up -d mariadb       # bringt die MariaDB (Port je nach Setup)
+# Für Start außerhalb von Docker muss .env ein DATABASE_URL auf eine erreichbare
+# MariaDB zeigen, z. B. mysql+pymysql://ws_verlag:PASSWORT@localhost:3306/ws_verlag
+# (SECRET_KEY unbedingt setzen!).
 copy .env.example .env
 
 # Datenbank initialisieren + Admin-Benutzer + Demo-Daten anlegen
+# (setzt eine erreichbare MariaDB laut DATABASE_URL voraus)
 poetry run python scripts/seed.py
 ```
 
@@ -33,6 +38,11 @@ Das Seed-Skript gibt beim ersten Lauf ein generiertes Admin-Passwort aus. **Nach
 sofort ändern.**
 
 ## Starten
+
+Empfohlen über Docker (App + MariaDB + Updater): `docker compose up -d`
+(siehe [README-DEPLOYMENT.md](README-DEPLOYMENT.md)).
+
+Nur-Host-Start (setzt eine erreichbare MariaDB via `DATABASE_URL` voraus):
 
 ```powershell
 .\run.ps1
@@ -48,13 +58,25 @@ Anwendung erreichbar unter `http://localhost:8000` (im lokalen Netzwerk: `http:/
 
 ## Tests
 
+Am einfachsten komplett über Docker (baut den `test`-Stage und führt pytest gegen eine
+eigene Wegwerf-MariaDB `db-test` aus — kein manuelles Setup, kein SQLite mehr):
+
 ```powershell
+docker compose --profile test run --rm test
+```
+
+Manuell auf dem Host (eigene MariaDB + `TEST_DATABASE_URL`):
+
+```powershell
+docker run -d -p 3307:3306 -e MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=1 mariadb:11
+$env:TEST_DATABASE_URL = "mysql+pymysql://root@127.0.0.1:3307/ws_verlag_test"
 poetry run pytest
 ```
 
-Getestet werden insbesondere die steuerlich kritische Logik (Berechnung 10 %/20 % USt.,
-Reverse-Charge, Werbesteuer) und die Nummernkreis-Logik (fortlaufende, konfigurierbare
-Belegnummern).
+Ohne erreichbare MariaDB werden die DB-Tests sauber übersprungen (nur `test_tax.py`
+läuft ohne DB). Getestet werden insbesondere die steuerlich kritische Logik
+(Berechnung 10 %/20 % USt., Reverse-Charge, Werbesteuer inkl. USt-Bemessungsgrundlage)
+und die Nummernkreis-Logik (fortlaufende, konfigurierbare Belegnummern).
 
 ## Produktivbetrieb (Synology NAS, Docker, automatische Updates)
 

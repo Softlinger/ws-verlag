@@ -4,6 +4,7 @@ from email.message import EmailMessage
 
 from sqlalchemy.orm import Session
 
+from app.crypto import decrypt_secret
 from app.models import Company, MailLog, MailStatus
 
 
@@ -52,7 +53,7 @@ def send_document_mail(
             raise RuntimeError("Kein SMTP-Server in den Firmenstammdaten konfiguriert.")
         with _connect(company) as server:
             if company.smtp_username:
-                server.login(company.smtp_username, company.smtp_password)
+                server.login(company.smtp_username, decrypt_secret(company.smtp_password))
             server.send_message(msg)
     except Exception as exc:  # noqa: BLE001 - Fehler wird protokolliert, nicht verschluckt
         status = MailStatus.FEHLGESCHLAGEN

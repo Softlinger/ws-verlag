@@ -1,15 +1,6 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
-from app.database import Base
 from app.models import DocumentType, NumberRange
 from app.services.numbering import generate_next_number
-
-
-def make_session():
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(bind=engine)
-    return sessionmaker(bind=engine)()
+from tests._db import make_session
 
 
 def test_generates_sequential_numbers_with_prefix_and_padding():

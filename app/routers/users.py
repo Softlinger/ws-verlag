@@ -30,6 +30,10 @@ def create_user(
     password: str = Form(...),
     role: UserRole = Form(UserRole.SACHBEARBEITER),
 ):
+    if len(password) < 8:
+        return RedirectResponse("/users?error=password_too_short", status_code=303)
+    if db.query(User).filter(User.username == username).first():
+        return RedirectResponse("/users?error=username_exists", status_code=303)
     new_user = User(username=username, full_name=full_name, password_hash=hash_password(password), role=role)
     db.add(new_user)
     db.commit()
@@ -41,6 +45,8 @@ def deactivate_user(user_id: int, db: Session = Depends(get_db), user: User = De
     target = db.get(User, user_id)
     if target:
         target.active = False
+        # Bestehende Sessions des Benutzers sofort entwerten (password_version hoch).
+        target.password_version = (target.password_version or 0) + 1
         db.commit()
     return RedirectResponse("/users", status_code=303)
 
@@ -67,5 +73,6 @@ def reset_password(
     if len(new_password) < 8:
         return RedirectResponse(f"/users?error=password_too_short#user-{target.id}", status_code=303)
     target.password_hash = hash_password(new_password)
+    target.password_version = (target.password_version or 0) + 1
     db.commit()
     return RedirectResponse(f"/users?success=password_reset#user-{target.id}", status_code=303)

@@ -1,18 +1,9 @@
 from datetime import date, timedelta
 from decimal import Decimal
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
-from app.database import Base
 from app.models import CreditNote, CreditNoteItem, Customer, Invoice, InvoiceItem, Payment
 from app.services.reporting import get_balance_list, get_vat_summary
-
-
-def make_session():
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(bind=engine)
-    return sessionmaker(bind=engine)()
+from tests._db import make_session
 
 
 def make_customer(db, name="Kunde A", **kwargs):
@@ -156,9 +147,13 @@ def test_vat_summary_advertising_tax_is_summed_and_credit_note_reduces_period():
 
     summary = get_vat_summary(db, date(2026, 3, 1), date(2026, 3, 31))
 
-    # Rechnung: Netto 100 + 5% Werbesteuer (5.00) = 105, + 20% USt (21.00) = 126.00
-    # Gutschrift: Netto 40, + 20% USt (8.00) = 48.00 (keine Werbesteuer auf Gutschriften)
-    assert summary.advertising_tax_amount == Decimal("5.00")
-    assert summary.net_by_rate[20] == Decimal("60.00")  # 100 - 40
-    assert summary.vat_by_rate[20] == Decimal("13.00")  # 21.00 - 8.00
-    assert summary.gross_total == Decimal("78.00")  # 126.00 - 48.00
+    # Rechnung: Netto 100 + 5% Werbesteuer (5.00) = 105 (USt-Bemessungsgrundlage),
+    #   + 20% USt (21.00) = 126.00. Netto-Ausweis traegt die Werbesteuer, damit
+    #   USt = 20% von 105 = 21 aufgeht.
+    # Gutschrift (M3): Kehrt Steuerbasis der Rechnung inkl. Werbeabgabe um:
+    #   Netto 40 + 5% Werbesteuer (2.00) = 42, + 20% USt (8.40) = 50.40.
+    assert summary.advertising_tax_amount == Decimal("3.00")  # 5.00 - 2.00
+    assert summary.net_by_rate[20] == Decimal("63.00")  # (100+5) - (40+2)
+    assert summary.vat_by_rate[20] == Decimal("12.60")  # 21.00 - 8.40 = 20% von 63.00
+    assert summary.net_total == Decimal("63.00")  # USt-Bemessungsgrundlage: 105 - 42
+    assert summary.gross_total == Decimal("75.60")  # 126.00 - 50.40

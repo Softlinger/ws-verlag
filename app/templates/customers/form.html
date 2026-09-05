@@ -4,6 +4,7 @@
 <h1>{{ "Kunde bearbeiten" if customer else "Neuer Kunde" }}</h1>
 <div class="card">
   <form method="post" action="{{ '/customers/' ~ customer.id ~ '/edit' if customer else '/customers/new' }}">
+    {{ csrf_field(request) }}
     <label for="name">Name / Firma</label>
     <input id="name" name="name" required value="{{ customer.name if customer else '' }}">
 

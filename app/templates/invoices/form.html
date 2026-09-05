@@ -4,6 +4,7 @@
 <h1>{{ "Rechnung " ~ invoice.number ~ " bearbeiten" if invoice else "Neue Rechnung" }}</h1>
 <div class="card">
   <form method="post" action="{{ '/invoices/' ~ invoice.id ~ '/edit' if invoice else '/invoices/new' }}">
+    {{ csrf_field(request) }}
     {% if order and not invoice %}<input type="hidden" name="order_id" value="{{ order.id }}">{% endif %}
     <label for="customer_id">Kunde</label>
     <select id="customer_id" name="customer_id" required>

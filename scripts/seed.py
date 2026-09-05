@@ -1,7 +1,11 @@
-"""Legt bei Bedarf einen initialen Admin-Benutzer und Demo-Stammdaten an.
+"""Legt bei Bedarf einen initialen Admin-Benutzer und (opt-in) Demo-Stammdaten an.
 
 Aufruf: poetry run python scripts/seed.py
+Demo-Stammdaten (Firmendaten-Platzhalter, Bankkonto, Zahlungsbedingungen, Artikel,
+Demo-Kunden, Demo-Auftrag) NUR bei SEED_DEMO=1 - damit ein Produktiv-Bootstrap
+(nur Admin anlegen) keine Beispieldaten in echte Mandanten-DBs mischt.
 """
+import os
 import secrets
 import sys
 from datetime import date
@@ -11,7 +15,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.auth import hash_password
-from app.database import Base, SessionLocal, engine, ensure_new_columns
+from app.database import Base, SessionLocal, engine, ensure_new_columns, ensure_new_constraints
 from app.models import (
     Article,
     BankAccount,
@@ -31,7 +35,9 @@ from app.routers.company import get_or_create_company
 def main() -> None:
     Base.metadata.create_all(bind=engine)
     ensure_new_columns()
+    ensure_new_constraints()
     db = SessionLocal()
+    seed_demo = os.environ.get("SEED_DEMO", "0") == "1"
     try:
         if not db.query(User).filter(User.username == "admin").first():
             generated_password = secrets.token_urlsafe(9)
@@ -51,7 +57,7 @@ def main() -> None:
             print("Admin-Benutzer existiert bereits, ueberspringe.")
 
         company = get_or_create_company(db)
-        if company.name == "Meine Firma":
+        if seed_demo and company.name == "Meine Firma":
             company.name = "WS-Verlag GmbH"
             company.street = "Musterstrasse 1"
             company.postal_code = "1010"
@@ -75,7 +81,7 @@ def main() -> None:
                 db.add(DunningLevelSetting(level=level, due_days=14 * level, fee_amount=Decimal("0.00") if level == 1 else Decimal("10.00")))
         db.commit()
 
-        if not db.query(BankAccount).filter(BankAccount.company_id == company.id).first():
+        if seed_demo and not db.query(BankAccount).filter(BankAccount.company_id == company.id).first():
             db.add(
                 BankAccount(
                     company_id=company.id,
@@ -88,13 +94,13 @@ def main() -> None:
             )
             db.commit()
 
-        if not db.query(PaymentTerm).first():
+        if seed_demo and not db.query(PaymentTerm).first():
             db.add(PaymentTerm(name="Sofort netto", days_due=0, is_default=False))
             db.add(PaymentTerm(name="14 Tage netto", days_due=14, is_default=True))
             db.add(PaymentTerm(name="30 Tage netto", days_due=30, is_default=False))
             db.commit()
 
-        if not db.query(Article).first():
+        if seed_demo and not db.query(Article).first():
             default_term = db.query(PaymentTerm).filter(PaymentTerm.is_default.is_(True)).first()
             bank_account = db.query(BankAccount).filter(BankAccount.is_default.is_(True)).first()
 
@@ -144,6 +150,15 @@ def main() -> None:
             db.commit()
 
             print("Demo-Stammdaten (Kunden, Artikel, Auftrag) angelegt.")
+
+        if not seed_demo:
+            print("Demo-Daten uebersprungen (SEED_DEMO!=1). Admin + Grundkonfiguration angelegt; "
+                  "echte Firmendaten/Bankkonto/Zahlungsbedingungen in der UI erfassen.")
+
+        # Sicherheitsnetz: gefälschte Demo-UID nie in einer produktiven Installation stehen lassen.
+        if company.uid_number.strip() == "ATU00000000":
+            print("WARNUNG: Firmen-UID steht auf dem Demo-Platzhalter ATU00000000 - "
+                  "bitte in den Firmenstammdaten durch die echte UID ersetzen!")
 
     finally:
         db.close()

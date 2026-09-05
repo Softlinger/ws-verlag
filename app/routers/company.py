@@ -6,8 +6,9 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.auth import require_admin
+from app.crypto import encrypt_secret
 from app.database import get_db
-from app.models import BankAccount, Company, DocumentType, DunningLevelSetting, NumberRange, PaymentTerm, User
+from app.models import BankAccount, Company, Customer, DocumentType, DunningLevelSetting, Invoice, NumberRange, PaymentTerm, User
 from app.templating import templates
 
 
@@ -100,7 +101,7 @@ def update_company(
     company.smtp_port = smtp_port
     company.smtp_username = smtp_username
     if smtp_password:
-        company.smtp_password = smtp_password
+        company.smtp_password = encrypt_secret(smtp_password)  # at-rest verschluesselt
     company.smtp_encryption = smtp_encryption if smtp_encryption in ("none", "starttls", "ssl") else "starttls"
     company.smtp_from_address = smtp_from_address
     company.smtp_from_name = smtp_from_name
@@ -175,6 +176,14 @@ def update_bank_account(
 def delete_bank_account(account_id: int, db: Session = Depends(get_db), user: User = Depends(require_admin)):
     account = db.get(BankAccount, account_id)
     if account:
+        # Referenziert? Sonst haengen Kunden/Rechnungen als dangling FK bzw. MariaDB
+        # wirft IntegrityError (500). Lieber abweisen als still Daten korrumpieren.
+        in_use = (
+            db.query(Customer).filter(Customer.bank_account_id == account_id).count()
+            + db.query(Invoice).filter(Invoice.bank_account_id == account_id).count()
+        )
+        if in_use:
+            return RedirectResponse("/company?error=bank_in_use", status_code=303)
         db.delete(account)
         db.commit()
     return RedirectResponse("/company", status_code=303)
@@ -230,6 +239,8 @@ def update_payment_term(
 def delete_payment_term(term_id: int, db: Session = Depends(get_db), user: User = Depends(require_admin)):
     term = db.get(PaymentTerm, term_id)
     if term:
+        if db.query(Customer).filter(Customer.payment_term_id == term_id).count():
+            return RedirectResponse("/company?error=payment_term_in_use", status_code=303)
         db.delete(term)
         db.commit()
     return RedirectResponse("/company", status_code=303)

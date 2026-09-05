@@ -56,11 +56,13 @@
     <a class="btn secondary" href="/invoices/{{ invoice.id }}/edit">Bearbeiten</a>
     {% endif %}
     <form style="display:inline" method="post" action="/invoices/{{ invoice.id }}/send">
+    {{ csrf_field(request) }}
       <button type="submit" class="secondary" {{ "disabled" if not invoice.customer.email.strip() else "" }}>Per E-Mail senden</button>
     </form>
     {% if not invoice.customer.email.strip() %}<span> (Kunde hat keine E-Mail-Adresse)</span>{% endif %}
     <a class="btn secondary" href="/credit-notes/new?invoice_id={{ invoice.id }}">Gutschrift erstellen</a>
     <form style="display:inline" method="post" action="/dunning/{{ invoice.id }}/create">
+    {{ csrf_field(request) }}
       <button type="submit" class="secondary">Mahnung erstellen</button>
     </form>
   </p>
@@ -79,6 +81,7 @@
     </tbody>
   </table>
   <form method="post" action="/invoices/{{ invoice.id }}/payments">
+    {{ csrf_field(request) }}
     <label for="amount">Betrag</label>
     <input id="amount" name="amount" type="number" step="0.01" required>
     <label for="payment_date">Datum</label>
@@ -105,6 +108,7 @@
         <td>
           <a href="/dunning/{{ dunning.id }}/pdf" target="_blank">PDF</a>
           <form style="display:inline" method="post" action="/dunning/{{ dunning.id }}/send">
+    {{ csrf_field(request) }}
             <button type="submit" class="secondary" {{ "disabled" if not invoice.customer.email.strip() else "" }}>Senden</button>
           </form>
         </td>

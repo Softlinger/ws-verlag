@@ -11,9 +11,10 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models import CreditNote, Customer, Invoice
+from app.models import CreditNote, Customer, Dunning, Invoice
 from app.services.tax import calculate_totals
 
 
@@ -86,7 +87,12 @@ def get_balance_list(db: Session, date_from: date, date_to: date) -> Saldenliste
 
     for credit_note in credit_notes:
         invoice = credit_note.invoice
-        totals = calculate_totals(credit_note.items)
+        totals = calculate_totals(
+            credit_note.items,
+            reverse_charge=invoice.reverse_charge,
+            advertising_tax_applicable=invoice.advertising_tax_applicable,
+            advertising_tax_rate=invoice.advertising_tax_rate,
+        )
         zeilen_by_customer.setdefault(invoice.customer_id, []).append(
             BelegZeile(
                 kind="gutschrift",
@@ -96,6 +102,39 @@ def get_balance_list(db: Session, date_from: date, date_to: date) -> Saldenliste
                 gross_total=-totals.gross_total,
                 paid_total=Decimal("0.00"),
                 open_amount=-totals.gross_total,
+            )
+        )
+        customers_by_id.setdefault(invoice.customer_id, invoice.customer)
+
+    # Mahngebuehren als UMSATSTEUERFREIE Zusatzposition (Kostenersatz, keine
+    # steuerpflichtige Leistung): erhoeht die offene Forderung des Kunden, taucht aber
+    # nirgends in calculate_totals/USt-Basis/UVA auf.
+    fee_by_invoice: dict[int, Decimal] = {}
+    fee_date_by_invoice: dict[int, date] = {}
+    dunnings = (
+        db.query(Dunning)
+        .join(Invoice, Dunning.invoice_id == Invoice.id)
+        .filter(func.date(Dunning.created_at) >= date_from, func.date(Dunning.created_at) <= date_to)
+        .all()
+    )
+    for dunning in dunnings:
+        if not dunning.fee_amount:
+            continue
+        fee_by_invoice[dunning.invoice_id] = fee_by_invoice.get(dunning.invoice_id, Decimal("0.00")) + dunning.fee_amount
+        fee_date_by_invoice[dunning.invoice_id] = dunning.created_at.date()
+    for invoice_id, fees in fee_by_invoice.items():
+        invoice = db.get(Invoice, invoice_id)
+        if invoice is None:
+            continue
+        zeilen_by_customer.setdefault(invoice.customer_id, []).append(
+            BelegZeile(
+                kind="mahngebuehr",
+                number=invoice.number,
+                beleg_date=fee_date_by_invoice[invoice_id],
+                status=None,
+                gross_total=fees,
+                paid_total=Decimal("0.00"),
+                open_amount=fees,
             )
         )
         customers_by_id.setdefault(invoice.customer_id, invoice.customer)
@@ -133,6 +172,9 @@ def get_balance_list(db: Session, date_from: date, date_to: date) -> Saldenliste
     )
 
 
+_BELEG_LABELS = {"rechnung": "Rechnung", "gutschrift": "Gutschrift", "mahngebuehr": "Mahngebuehr (USt-frei)"}
+
+
 def balance_list_to_csv(saldenliste: Saldenliste) -> str:
     buffer = io.StringIO()
     writer = csv.writer(buffer, delimiter=";")
@@ -142,7 +184,7 @@ def balance_list_to_csv(saldenliste: Saldenliste) -> str:
             writer.writerow(
                 [
                     kunde.customer.name,
-                    "Rechnung" if zeile.kind == "rechnung" else "Gutschrift",
+                    _BELEG_LABELS.get(zeile.kind, zeile.kind),
                     zeile.number,
                     zeile.beleg_date.strftime("%d.%m.%Y"),
                     zeile.status or "",
@@ -173,16 +215,20 @@ class VatSummary:
     gross_total: Decimal = Decimal("0.00")
 
 
-def _apply_beleg_to_vat_summary(summary: VatSummary, *, items, reverse_charge: bool, totals, sign: int) -> None:
+def _apply_beleg_to_vat_summary(summary: VatSummary, *, reverse_charge: bool, totals, sign: int) -> None:
     if reverse_charge:
         summary.reverse_charge_net += sign * totals.net_total
     else:
-        for item in items:
-            summary.net_by_rate[item.vat_rate] = summary.net_by_rate.get(item.vat_rate, Decimal("0.00")) + sign * item.net_total
+        # Netto je Satz = BEMESSUNGSGRUNDLAGE inkl. anteiliger Werbesteuer (aus
+        # calculate_totals), damit gemeldete USt = Satz x gemeldetes Netto ist.
+        for rate, base in totals.base_by_rate.items():
+            summary.net_by_rate[rate] = summary.net_by_rate.get(rate, Decimal("0.00")) + sign * base
         for rate, amount in totals.vat_breakdown.items():
             summary.vat_by_rate[rate] = summary.vat_by_rate.get(rate, Decimal("0.00")) + sign * amount
     summary.advertising_tax_amount += sign * totals.advertising_tax_amount
-    summary.net_total += sign * totals.net_total
+    # "Gesamt Netto" = USt-Bemessungsgrundlage (Netto + Werbesteuer), damit
+    # Netto + USt = Brutto aufgeht. Der reine Waren-/Leistungsnetto steckt darin.
+    summary.net_total += sign * totals.subtotal
     summary.gross_total += sign * totals.gross_total
 
 
@@ -201,7 +247,7 @@ def get_vat_summary(db: Session, date_from: date, date_to: date) -> VatSummary:
             advertising_tax_applicable=invoice.advertising_tax_applicable,
             advertising_tax_rate=invoice.advertising_tax_rate,
         )
-        _apply_beleg_to_vat_summary(summary, items=invoice.items, reverse_charge=invoice.reverse_charge, totals=totals, sign=1)
+        _apply_beleg_to_vat_summary(summary, reverse_charge=invoice.reverse_charge, totals=totals, sign=1)
 
     credit_notes = (
         db.query(CreditNote)
@@ -211,8 +257,13 @@ def get_vat_summary(db: Session, date_from: date, date_to: date) -> VatSummary:
     )
     for credit_note in credit_notes:
         invoice = credit_note.invoice
-        totals = calculate_totals(credit_note.items, reverse_charge=invoice.reverse_charge)
-        _apply_beleg_to_vat_summary(summary, items=credit_note.items, reverse_charge=invoice.reverse_charge, totals=totals, sign=-1)
+        totals = calculate_totals(
+            credit_note.items,
+            reverse_charge=invoice.reverse_charge,
+            advertising_tax_applicable=invoice.advertising_tax_applicable,
+            advertising_tax_rate=invoice.advertising_tax_rate,
+        )
+        _apply_beleg_to_vat_summary(summary, reverse_charge=invoice.reverse_charge, totals=totals, sign=-1)
 
     summary.vat_total = sum(summary.vat_by_rate.values(), Decimal("0.00"))
     return summary
@@ -225,7 +276,7 @@ def vat_summary_to_csv(summary: VatSummary) -> str:
     for rate in sorted(summary.net_by_rate):
         writer.writerow([f"{rate}% USt.", f"{summary.net_by_rate[rate]:.2f}", f"{summary.vat_by_rate.get(rate, Decimal('0.00')):.2f}"])
     writer.writerow(["Reverse-Charge (0% USt.)", f"{summary.reverse_charge_net:.2f}", "0.00"])
-    writer.writerow(["Werbesteuer", f"{summary.advertising_tax_amount:.2f}", ""])
+    writer.writerow(["davon Werbesteuer (in Netto-Basis enthalten)", f"{summary.advertising_tax_amount:.2f}", ""])
     writer.writerow(["Gesamt Netto", f"{summary.net_total:.2f}", ""])
     writer.writerow(["Gesamt USt.", "", f"{summary.vat_total:.2f}"])
     writer.writerow(["Gesamt Brutto", f"{summary.gross_total:.2f}", ""])

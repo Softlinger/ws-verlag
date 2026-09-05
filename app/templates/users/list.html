@@ -20,11 +20,14 @@
         <td>{{ u.username }}</td><td>{{ u.full_name }}</td><td>{{ u.role.value }}</td><td>{{ "Ja" if u.active else "Nein" }}</td>
         <td>
           {% if u.active %}
-          <form method="post" action="/users/{{ u.id }}/deactivate"><button type="submit" class="danger">Deaktivieren</button></form>
+          <form method="post" action="/users/{{ u.id }}/deactivate">
+    {{ csrf_field(request) }}<button type="submit" class="danger">Deaktivieren</button></form>
           {% else %}
-          <form method="post" action="/users/{{ u.id }}/activate"><button type="submit" class="secondary">Aktivieren</button></form>
+          <form method="post" action="/users/{{ u.id }}/activate">
+    {{ csrf_field(request) }}<button type="submit" class="secondary">Aktivieren</button></form>
           {% endif %}
           <form method="post" action="/users/{{ u.id }}/reset-password" style="margin-top: 0.5rem;">
+    {{ csrf_field(request) }}
             <input name="new_password" type="password" placeholder="Neues Passwort" required minlength="8" autocomplete="new-password" style="width:auto; display:inline-block;">
             <button type="submit" class="secondary">Passwort zur&uuml;cksetzen</button>
           </form>

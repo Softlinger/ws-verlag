@@ -8,7 +8,7 @@ Sicherheitsprinzipien:
   Container ausgefuehrt, niemals vom Anwendungsprozess selbst.
 """
 import json
-from datetime import datetime, timedelta
+from datetime import timedelta
 from urllib.parse import urlparse
 
 import httpx
@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.models import UpdateApplyStatus, UpdateState
+from app.times import utcnow
 from app.version import __version__ as current_version
 
 
@@ -35,7 +36,7 @@ def is_check_due(state: UpdateState) -> bool:
         return False
     if state.last_checked_at is None:
         return True
-    return datetime.utcnow() - state.last_checked_at > timedelta(hours=settings.update_check_interval_hours)
+    return utcnow() - state.last_checked_at > timedelta(hours=settings.update_check_interval_hours)
 
 
 def check_for_update(db: Session) -> UpdateState:
@@ -47,7 +48,7 @@ def check_for_update(db: Session) -> UpdateState:
 
     if parsed.scheme != "https":
         state.check_error = "Update-Manifest-URL muss HTTPS verwenden - Pruefung uebersprungen."
-        state.last_checked_at = datetime.utcnow()
+        state.last_checked_at = utcnow()
         db.commit()
         return state
 
@@ -60,6 +61,17 @@ def check_for_update(db: Session) -> UpdateState:
         if not required_fields.issubset(manifest.keys()):
             raise ValueError(f"Manifest unvollstaendig, erwartet Felder: {required_fields}")
 
+        # Optionale Signaturpruefung (offen lassen, wenn kein Public-Key konfiguriert).
+        if settings.update_manifest_public_key:
+            from cryptography.exceptions import InvalidSignature
+
+            from app.services.update_signing import verify_manifest
+
+            try:
+                verify_manifest(manifest, settings.update_manifest_public_key)
+            except InvalidSignature as exc:
+                raise ValueError(f"Manifest-Signatur ungueltig: {exc}") from exc
+
         # Downgrades/gleiche Version werden ignoriert - Vergleich per SemVer, nicht per String.
         try:
             is_newer = Version(str(manifest["version"])) > Version(current_version)
@@ -67,7 +79,7 @@ def check_for_update(db: Session) -> UpdateState:
             raise ValueError(f"Ungueltige Versionsnummer im Manifest: {exc}") from exc
 
         state.check_error = ""
-        state.last_checked_at = datetime.utcnow()
+        state.last_checked_at = utcnow()
         if is_newer:
             is_different_version = str(manifest["version"]) != state.latest_version
             state.latest_version = str(manifest["version"])
@@ -99,7 +111,7 @@ def check_for_update(db: Session) -> UpdateState:
 
     except (httpx.HTTPError, ValueError, json.JSONDecodeError) as exc:
         state.check_error = f"Update-Pruefung fehlgeschlagen: {exc}"[:500]
-        state.last_checked_at = datetime.utcnow()
+        state.last_checked_at = utcnow()
 
     db.commit()
     return state

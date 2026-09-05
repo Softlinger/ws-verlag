@@ -7,8 +7,11 @@ from app.models import DocumentType, NumberRange
 def generate_next_number(db: Session, document_type: DocumentType) -> str:
     """Erzeugt die naechste fortlaufende Belegnummer fuer den gegebenen Belegtyp.
 
-    Race-sicher innerhalb einer DB-Transaktion durch SELECT ... FOR UPDATE (bei MariaDB)
-    bzw. serialisiert durch den aufrufenden Request bei SQLite.
+    Race-sicher innerhalb einer DB-Transaktion durch SELECT ... FOR UPDATE auf der
+    NumberRange-Zeile (MariaDB/MySQL; SQLite wird nicht mehr unterstuetzt). Der
+    Zaehler-Bump liegt in derselben Transaktion wie der Beleg-INSERT: schlaegt der
+    INSERT fehl, rollt der Bump mit zurueck (Nummer wird wiederverwendet, keine
+    Luecke - wie fuer fortlaufende Nummernkreise gefordert).
     """
     range_row = db.execute(
         select(NumberRange).where(NumberRange.document_type == document_type).with_for_update()

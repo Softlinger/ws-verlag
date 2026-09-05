@@ -34,6 +34,7 @@
           {% if row.detail_url %}<a href="{{ row.detail_url }}">Beleg ansehen</a>{% endif %}
           {% if row.resend_url %}
           <form style="display:inline" method="post" action="{{ row.resend_url }}">
+    {{ csrf_field(request) }}
             <button type="submit" class="secondary">Erneut senden</button>
           </form>
           {% endif %}

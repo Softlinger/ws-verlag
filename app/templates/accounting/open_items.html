@@ -32,6 +32,7 @@
           <details class="help-menu">
             <summary>Zahlung erfassen</summary>
             <form method="post" action="/accounting/open-items/{{ row.invoice.id }}/confirm-payment">
+    {{ csrf_field(request) }}
               <label for="amount-{{ row.invoice.id }}">Betrag</label>
               <input id="amount-{{ row.invoice.id }}" name="amount" type="number" step="0.01" required value="{{ '%.2f'|format(row.open_amount) }}">
               <label for="payment_date-{{ row.invoice.id }}">Datum</label>
@@ -45,6 +46,7 @@
           </details>
           {% if row.overdue %}
           <form style="display:inline" method="post" action="/dunning/{{ row.invoice.id }}/create">
+    {{ csrf_field(request) }}
             <button type="submit" class="secondary">Mahnung erstellen</button>
           </form>
           {% endif %}

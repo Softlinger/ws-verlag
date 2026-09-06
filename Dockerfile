@@ -20,6 +20,13 @@ COPY scripts ./scripts
 # Nicht-root-Benutzer: der App-Container braucht (bewusst) keinerlei erhoehte Rechte
 # und hat insbesondere keinen Zugriff auf den Docker-Socket - nur der Updater-Container hat das.
 RUN useradd --create-home --shell /usr/sbin/nologin appuser
+
+# Das Update-Signal-Volume muss der (nicht-root) App-Prozess beschreiben koennen
+# (update_request.json/backup_request.json). Ein frisches benanntes Volume erbt beim
+# ersten Mount den Besitz/Eigentum dieses Image-Verzeichnisses - deshalb hier als
+# appuser anlegen, sonst schlaegt "Installieren" mit Permission denied fehl.
+RUN mkdir -p /update-signal && chown appuser:appuser /update-signal
+
 USER appuser
 
 EXPOSE 8000

@@ -143,6 +143,27 @@ button, .btn {
 button.secondary, .btn.secondary { background: var(--color-surface); color: var(--color-primary); border: 1px solid var(--color-border); }
 button.danger, .btn.danger { background: var(--color-danger); }
 
+/* Schwebender "Start/Home"-Button auf langen Seiten (z. B. Firmenstammdaten),
+   damit das Zurueckscrollen zur Navigation entfaellt. */
+.floating-home {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1.1rem;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(31, 41, 51, 0.28);
+  font-weight: 600;
+  text-decoration: none;
+  opacity: 0.92;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.floating-home:hover, .floating-home:focus { opacity: 1; transform: translateY(-2px); text-decoration: none; }
+.floating-home .home-icon { font-size: 1.15rem; line-height: 1; }
+
 .status-badge { padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.85rem; }
 .status-offen { background: #fdecea; color: var(--color-danger); }
 .status-teilbezahlt { background: #fff4e0; color: #8a5a00; }

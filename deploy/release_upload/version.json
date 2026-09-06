@@ -1,8 +1,8 @@
 {
-  "version": "0.3.5",
+  "version": "0.3.6",
   "release_date": "2026-09-06",
-  "changelog": "- DB nur noch MariaDB (SQLite entfernt), Tests+Compose-Testprofil",
+  "changelog": "- Fix: /update-signal-Volume erfuellt Schreibrecht der App (frische Installationen konnten sonst nicht updaten)",
   "image": "ghcr.io/softlinger/ws-verlag",
-  "image_digest": "sha256:8df89dff880a0d43b75fd28aff370959cc806c8048ea145037a0bbe0614991f2",
-  "min_upgrade_from": "0.3.3"
+  "image_digest": "sha256:60399d833d56a2b9ab07b52986df6b81e7c9a1ff89dfd552e88505cbb166f1b9",
+  "min_upgrade_from": "0.3.5"
 }

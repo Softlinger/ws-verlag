@@ -1,8 +1,8 @@
 {
-  "version": "0.3.3",
-  "release_date": "2026-09-04",
-  "changelog": "- Fehlerbehebung: Update-Karte blieb nach erfolgreicher Installation bis zur naechsten planmaessigen Pruefung mit veraltetem Status stehen, statt sofort zu verschwinden",
+  "version": "0.3.5",
+  "release_date": "2026-09-06",
+  "changelog": "- DB nur noch MariaDB (SQLite entfernt), Tests+Compose-Testprofil",
   "image": "ghcr.io/softlinger/ws-verlag",
-  "image_digest": "sha256:8dbf1e054db69d3865f70e8fe4474521ba8483344eccffb00c1364205452def9",
-  "min_upgrade_from": "0.3.2"
+  "image_digest": "sha256:8df89dff880a0d43b75fd28aff370959cc806c8048ea145037a0bbe0614991f2",
+  "min_upgrade_from": "0.3.3"
 }

@@ -41,3 +41,8 @@ USER appuser
 WORKDIR /srv/app
 # no:cacheprovider - appuser darf das Read-only-Image nicht beschreiben (.pytest_cache).
 CMD ["pytest", "-q", "-p", "no:cacheprovider"]
+
+# LETZTER Stage = Default-Target eines plain `docker build .` (ohne --target), so wie es
+# deploy/release.py nutzt. Bewusst NACH dem test-Stage, damit das Release-Image das
+# Server-Image ist und nicht (versehentlich) das pytest-Image. Inhalt = base.
+FROM base AS runtime

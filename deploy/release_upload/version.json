@@ -1,8 +1,8 @@
 {
-  "version": "0.3.6",
-  "release_date": "2026-09-06",
-  "changelog": "- Fix: /update-signal-Volume erfuellt Schreibrecht der App (frische Installationen konnten sonst nicht updaten)",
+  "version": "0.4.0",
+  "release_date": "2026-09-14",
+  "changelog": "- Kunden: 2. Namenszeile (Namenszusatz), erscheint auch auf Belegen",
   "image": "ghcr.io/softlinger/ws-verlag",
-  "image_digest": "sha256:60399d833d56a2b9ab07b52986df6b81e7c9a1ff89dfd552e88505cbb166f1b9",
-  "min_upgrade_from": "0.3.5"
+  "image_digest": "sha256:17a88ad946ab5888c61093905088fb83d66b9b55f970c3271b75db22c09ed94d",
+  "min_upgrade_from": "0.3.6"
 }

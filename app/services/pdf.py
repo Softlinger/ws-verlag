@@ -32,7 +32,7 @@ ITEMS_LINE_RIGHT_X = PRINT_RIGHT + 10  # Trennlinien der Positionstabelle: 1cm u
 
 LOGO_X, LOGO_Y_TOP, LOGO_W, LOGO_H = 110, 35, 90, 50
 
-ADDR_X, ADDR_Y_TOP, ADDR_SIZE = 13, 58, 12
+ADDR_X, ADDR_Y_TOP, ADDR_SIZE = 25, 58, 12  # 2,5cm vom linken Rand (fachliche Vorgabe)
 ADDR_LEADING = 5.6
 
 DATE_X, DATE_Y_TOP, DATE_SIZE = 160, 128, 12
@@ -365,9 +365,11 @@ def render_credit_note_pdf(*, company: Company, credit_note, customer, items, to
 
 
 def render_dunning_pdf(*, company: Company, dunning, invoice, customer) -> bytes:
-    """Eigenes, einfacheres Layout fuer Mahnungen (bewusst nicht Teil der 1:1-Vorlage)."""
+    """Eigenes, einfacheres Layout fuer Mahnungen (bewusst nicht Teil der 1:1-Vorlage).
+    leftMargin explizit 25mm (2,5cm) - dieselbe Vorgabe wie fuer den Adressblock der
+    anderen Belegtypen, statt sich auf ReportLabs Default (1 Zoll = 25,4mm) zu verlassen."""
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=25 * mm)
     elements = [
         Paragraph(f"<b>{company.name}</b>", styles["Heading2"]),
         Paragraph(

@@ -1,8 +1,8 @@
 {
-  "version": "0.4.2",
+  "version": "0.4.3",
   "release_date": "2026-09-14",
-  "changelog": "- Suche in allen Listen (Kunden, Artikel, Auftraege, Rechnungen, Gutschriften, Offene Posten, Mahnwesen, Mails, Benutzer)",
+  "changelog": "- Update-UI heilt einen verwaisten 'Installation laeuft'-Status automatisch (fehlender Abschluss-Report oder zurueckgespielte DB)",
   "image": "ghcr.io/softlinger/ws-verlag",
-  "image_digest": "sha256:815684d76b4aa7d5cc46dca4078e228b81d6dc6b079da0f88ccf966ac032172a",
-  "min_upgrade_from": "0.4.1"
+  "image_digest": "sha256:5c325f8923dafb320cf380954aba7fdb6fad6a803e887dd2ab0932f4108044bf",
+  "min_upgrade_from": "0.4.2"
 }

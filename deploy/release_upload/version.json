@@ -1,8 +1,8 @@
 {
-  "version": "0.4.4",
+  "version": "0.4.5",
   "release_date": "2026-09-14",
-  "changelog": "- Mehr Kontrast/Uebersicht: Zebra-Streifen in allen Listen",
+  "changelog": "- style.css erhaelt Cache-Buster (?v=Version): nach einem Update laden Browser automatisch die frische CSS",
   "image": "ghcr.io/softlinger/ws-verlag",
-  "image_digest": "sha256:0d348a19e16003af698407713c4685ab16aebbdad6637422358d034ad691620a",
-  "min_upgrade_from": "0.4.3"
+  "image_digest": "sha256:ebf3816b6bf8ea7a2814fadd3e64916de37ea3a3df2335c60a740c9dd9c29905",
+  "min_upgrade_from": "0.4.4"
 }

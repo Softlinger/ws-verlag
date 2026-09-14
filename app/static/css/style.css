@@ -8,6 +8,8 @@
   --color-border: #d9dde3;
   --color-danger: #b3261e;
   --color-success: #1e6b3a;
+  --color-info: #1f5c99;
+  --color-warning: #8a5a00;
   --focus-ring: #1a5fb4;
   font-size: 16px;
 }
@@ -142,6 +144,47 @@ button, .btn {
 }
 button.secondary, .btn.secondary { background: var(--color-surface); color: var(--color-primary); border: 1px solid var(--color-border); }
 button.danger, .btn.danger { background: var(--color-danger); }
+button.success, .btn.success { background: var(--color-success); }
+button.info, .btn.info { background: var(--color-info); }
+button.warning, .btn.warning { background: var(--color-warning); }
+
+/* ---- Listen: Zebra-Streifen fuer bessere Zeilen-Zuordnung ---- */
+main table tbody tr:nth-child(even) { background: #eef1f4; }
+main table tbody tr:hover { background: #e3e9ef; }
+
+/* ---- Aktionszellen: alle Links/Buttons einheitlich als kleine Buttons, farblich
+       nach Funktion. Trifft NUR die Aktionen (detail-links enden auf die ID, bekommen
+       den neutralen Basistil). ---- */
+main table td a, main table td button, main table td .btn {
+  display: inline-block;
+  margin: 0.15rem 0.3rem 0.15rem 0;
+  padding: 0.3rem 0.65rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  line-height: 1.2;
+  text-decoration: none;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  cursor: pointer;
+}
+/* Bearbeiten -> Primärfarbe */
+main table td a[href*="/edit"] { background: var(--color-primary); color: var(--color-primary-contrast); border-color: var(--color-primary); }
+/* Drucken / PDF / Adresse -> Info (blau) */
+main table td a[href*="pdf"] { background: var(--color-info); color: #fff; border-color: var(--color-info); }
+/* Senden / Zahlu... / Mahnung erstellen (POST-Buttons der Aktion) -> Success (gruen) */
+main table td a[href*="/send"], main table td form[method="post"] button { background: var(--color-success); color: #fff; border-color: var(--color-success); }
+/* Loeschen/Deaktivieren (class danger) -> Rot, gewinnt gegen die Success-Regel oben */
+main table td form[method="post"] button.danger, main table td button.danger { background: var(--color-danger); border-color: var(--color-danger); }
+main table td button.secondary { background: var(--color-surface); color: var(--color-primary); border-color: var(--color-border); }
+main table td a:hover, main table td button:hover { filter: brightness(1.08); }
+
+/* ---- Detailseiten-/Formular-Aktionsleisten: .btn-Links farblich nach Funktion.
+       Ueberschreibt .btn.secondary dank hoeherer Spezifitaet (Klasse + Attribut). ---- */
+a.btn[href*="/edit"] { background: var(--color-primary); color: var(--color-primary-contrast); border-color: var(--color-primary); }
+a.btn[href*="pdf"] { background: var(--color-info); color: #fff; border-color: var(--color-info); }
+a.btn[href*="/send"] { background: var(--color-success); color: #fff; border-color: var(--color-success); }
+a.btn[href*="/invoices/new"], a.btn[href*="/credit-notes/new"] { background: var(--color-success); color: #fff; border-color: var(--color-success); }
 
 /* Schwebender "Start/Home"-Button auf langen Seiten (z. B. Firmenstammdaten),
    damit das Zurueckscrollen zur Navigation entfaellt. */

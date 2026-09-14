@@ -57,13 +57,13 @@
     {% endif %}
     <form style="display:inline" method="post" action="/invoices/{{ invoice.id }}/send">
     {{ csrf_field(request) }}
-      <button type="submit" class="secondary" {{ "disabled" if not invoice.customer.email.strip() else "" }}>Per E-Mail senden</button>
+      <button type="submit" class="success" {{ "disabled" if not invoice.customer.email.strip() else "" }}>Per E-Mail senden</button>
     </form>
     {% if not invoice.customer.email.strip() %}<span> (Kunde hat keine E-Mail-Adresse)</span>{% endif %}
     <a class="btn secondary" href="/credit-notes/new?invoice_id={{ invoice.id }}">Gutschrift erstellen</a>
     <form style="display:inline" method="post" action="/dunning/{{ invoice.id }}/create">
     {{ csrf_field(request) }}
-      <button type="submit" class="secondary">Mahnung erstellen</button>
+      <button type="submit" class="warning">Mahnung erstellen</button>
     </form>
   </p>
 </div>
@@ -90,7 +90,7 @@
     <input id="method" name="method" value="Ueberweisung">
     <label for="note">Notiz</label>
     <input id="note" name="note">
-    <p><button type="submit" style="margin-top: 1rem;">Zahlung erfassen</button></p>
+    <p><button type="submit" class="success" style="margin-top: 1rem;">Zahlung erfassen</button></p>
   </form>
 </div>
 
@@ -109,7 +109,7 @@
           <a href="/dunning/{{ dunning.id }}/pdf" target="_blank">PDF</a>
           <form style="display:inline" method="post" action="/dunning/{{ dunning.id }}/send">
     {{ csrf_field(request) }}
-            <button type="submit" class="secondary" {{ "disabled" if not invoice.customer.email.strip() else "" }}>Senden</button>
+            <button type="submit" class="success" {{ "disabled" if not invoice.customer.email.strip() else "" }}>Senden</button>
           </form>
         </td>
       </tr>

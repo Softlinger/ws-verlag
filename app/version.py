@@ -1,3 +1,3 @@
 """Zentrale Versionsnummer der Anwendung (SemVer). Bei jedem Release hochzaehlen."""
 
-__version__ = "0.4.4"
+__version__ = "0.4.5"

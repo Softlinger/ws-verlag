@@ -31,6 +31,30 @@ def get_or_create_update_state(db: Session) -> UpdateState:
     return state
 
 
+def clear_stale_apply_status(db: Session) -> UpdateState:
+    """Heilt einen verwaisten 'laeuft'-Status.
+
+    Ein Update meldet seinen Abschluss via /updates/report. Fehlt dieser Report (Updater
+    crasht, Netzwerkproblem) ODER der Status stammt aus einer zurueckgespielten alten
+    DB-Sicherung, bleibt apply_status auf ANGEFORDERT/WIRD_INSTALLIERT kleben und die UI
+    zeigt dauerhaft 'Installation laeuft'. check_for_update darf einen *echten* laufenden
+    Vorgang nicht anfasst - deshalb nur zuruecksetzen, wenn seit apply_requested_at mehr
+    als das Wartungsfenster vergangen ist (dann kann kein laufender Vorgang mehr sein)."""
+    state = get_or_create_update_state(db)
+    if state.apply_status in (UpdateApplyStatus.ANGEFORDERT, UpdateApplyStatus.WIRD_INSTALLIERT):
+        stale = state.apply_requested_at is None or (
+            utcnow() - state.apply_requested_at
+            > timedelta(seconds=settings.update_maintenance_timeout_seconds)
+        )
+        if stale:
+            state.apply_status = UpdateApplyStatus.NONE
+            state.apply_requested_at = None
+            state.apply_finished_at = None
+            state.apply_message = ""
+            db.commit()
+    return state
+
+
 def is_check_due(state: UpdateState) -> bool:
     if not settings.update_check_enabled:
         return False
@@ -43,7 +67,7 @@ def check_for_update(db: Session) -> UpdateState:
     """Fuehrt die Pruefung durch und persistiert das Ergebnis. Wirft keine Exceptions nach
     aussen - Netzwerkfehler werden im state.check_error vermerkt, damit ein einzelner
     fehlgeschlagener Check die App nie zum Absturz bringt."""
-    state = get_or_create_update_state(db)
+    state = clear_stale_apply_status(db)
     parsed = urlparse(settings.update_manifest_url)
 
     if parsed.scheme != "https":

@@ -10,7 +10,7 @@ from app.auth import require_admin
 from app.config import settings
 from app.database import get_db
 from app.models import UpdateApplyStatus, User
-from app.services.update_check import check_for_update, get_or_create_update_state
+from app.services.update_check import check_for_update, clear_stale_apply_status, get_or_create_update_state
 from app.templating import templates
 from app.times import utcnow
 from app.version import __version__
@@ -20,7 +20,9 @@ router = APIRouter(prefix="/updates", tags=["updates"])
 
 @router.get("")
 def update_page(request: Request, db: Session = Depends(get_db), user: User = Depends(require_admin)):
-    state = get_or_create_update_state(db)
+    # Verwaisten "laeuft"-Status heilen, damit die Seite nicht dauerhaft "Installation
+    # laeuft" zeigt, wenn ein Abschluss-Report fehlte oder eine alte DB eingespielt wurde.
+    state = clear_stale_apply_status(db)
     return templates.TemplateResponse(
         request, "updates/status.html", {"state": state, "current_version": __version__}
     )

@@ -1,9 +1,11 @@
 import httpx
 import pytest
+from datetime import timedelta
 
 from app.config import settings
 from app.models import UpdateApplyStatus, UpdateState
 from app.services import update_check
+from app.times import utcnow
 from tests._db import make_session
 
 
@@ -78,6 +80,32 @@ def test_handles_incomplete_manifest_gracefully(monkeypatch):
 
     assert "Manifest unvollstaendig" in state.check_error
     assert state.latest_version == ""
+
+
+def test_clear_stale_apply_status_resets_old_request():
+    """Ein 'laeuft'-Status aelter als das Wartungsfenster ist verwaist (verlorener Report
+    oder zurueckgespielte alte DB) und muss auf none heilen, damit die UI freigibt."""
+    db = make_session()
+    state = update_check.get_or_create_update_state(db)
+    state.apply_status = UpdateApplyStatus.WIRD_INSTALLIERT
+    state.apply_requested_at = utcnow() - timedelta(hours=2)
+    db.commit()
+
+    healed = update_check.clear_stale_apply_status(db)
+    assert healed.apply_status == UpdateApplyStatus.NONE
+    assert healed.apply_requested_at is None
+
+
+def test_clear_stale_apply_status_keeps_recent_request():
+    """Ein frischer 'laeuft'-Status ist ein echter laufender Update -> nicht antasten."""
+    db = make_session()
+    state = update_check.get_or_create_update_state(db)
+    state.apply_status = UpdateApplyStatus.ANGEFORDERT
+    state.apply_requested_at = utcnow()
+    db.commit()
+
+    same = update_check.clear_stale_apply_status(db)
+    assert same.apply_status == UpdateApplyStatus.ANGEFORDERT
 
 
 def test_resets_apply_status_when_a_newer_version_appears_after_a_successful_install(monkeypatch):

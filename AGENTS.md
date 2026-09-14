@@ -151,6 +151,11 @@ duplizieren, nicht „einfach schnell" neu implementieren:
    `/healthz`, `/login`, `/logout`, `/static`, `/updates…` mit 503 — damit niemand
    während Backup/Container-Tausch auf App/DB schreibt. Beim Umbau der Middleware die
    Allowlist NICHT verkleinern (sonst kann der Updater nicht mehr reporten/healthchecken).
+   `update_check.clear_stale_apply_status()` (in `check_for_update` + beim Öffnen von
+   `/updates` aufgerufen) setzt einen verwaisten ANGEFORDERT/WIRD_INSTALLIERT auf NONE
+   zurück, wenn seit `apply_requested_at` mehr als das Wartungsfenster vergangen ist —
+   sonst hängt die UI dauerhaft auf „Installation läuft" (z. B. nach fehlgeschlagenem
+   Report oder einer zurückgespielten alten DB). NICHT entfernen.
 10. **Session = `password_version`-gebunden.** Der Cookie trägt `password_version`;
    Passwortwechsel/Deaktivierung (`account.py`, `users.py`) müssen ihn erhöhen, sonst
    bleiben gestohlene Cookies gültig. `/updates/report` verlangt Header

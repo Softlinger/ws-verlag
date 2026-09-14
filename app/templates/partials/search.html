@@ -1,0 +1,14 @@
+{#
+  Wiederverwendbares Suchfeld fuer Listen. GET-Form auf die aktuelle Pfad-URL,
+  Parameter `q`. Route muss `q` (String) im Template-Kontext mitgeben.
+  Optional: additional hidden fields ermoeglichen, falls eine Liste weitere
+  Filter-Parameter hat (hier bewusst nur q).
+#}
+<form method="get" action="{{ request.url.path }}" class="search-bar" role="search">
+  <input id="q" name="q" type="search" value="{{ q or '' }}"
+         placeholder="Suchen&hellip;" aria-label="Liste durchsuchen" autocomplete="off">
+  <button type="submit" class="btn">Suchen</button>
+  {% if q %}
+  <a class="btn secondary" href="{{ request.url.path }}">Zur&uuml;cksetzen</a>
+  {% endif %}
+</form>

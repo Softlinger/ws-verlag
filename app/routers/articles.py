@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.auth import require_login
@@ -13,9 +14,13 @@ router = APIRouter(prefix="/articles", tags=["articles"])
 
 
 @router.get("")
-def list_articles(request: Request, db: Session = Depends(get_db), user: User = Depends(require_login)):
-    articles = db.query(Article).order_by(Article.name).all()
-    return templates.TemplateResponse(request, "articles/list.html", {"articles": articles})
+def list_articles(request: Request, q: str = "", db: Session = Depends(get_db), user: User = Depends(require_login)):
+    query = db.query(Article)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(or_(Article.name.ilike(like), Article.description.ilike(like), Article.unit.ilike(like)))
+    articles = query.order_by(Article.name).all()
+    return templates.TemplateResponse(request, "articles/list.html", {"articles": articles, "q": q})
 
 
 @router.get("/new")

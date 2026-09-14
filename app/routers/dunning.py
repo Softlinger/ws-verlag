@@ -3,12 +3,13 @@ from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse, Response
+from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import require_login
 from app.database import get_db
-from app.models import Dunning, Invoice, InvoiceStatus, MailStatus, User
+from app.models import Customer, Dunning, Invoice, InvoiceStatus, MailStatus, User
 from app.routers.company import get_or_create_company
 from app.services.dunning import get_level_setting, next_dunning_level, render_dunning_text
 from app.services.mailer import send_document_mail
@@ -21,15 +22,14 @@ router = APIRouter(prefix="/dunning", tags=["dunning"])
 
 
 @router.get("")
-def list_open_invoices(request: Request, db: Session = Depends(get_db), user: User = Depends(require_login)):
+def list_open_invoices(request: Request, q: str = "", db: Session = Depends(get_db), user: User = Depends(require_login)):
     today = today_vienna()
-    invoices = (
-        db.query(Invoice)
-        .filter(Invoice.status != InvoiceStatus.BEZAHLT, Invoice.due_date < today)
-        .order_by(Invoice.due_date)
-        .all()
-    )
-    return templates.TemplateResponse(request, "dunning/list.html", {"invoices": invoices})
+    query = db.query(Invoice).filter(Invoice.status != InvoiceStatus.BEZAHLT, Invoice.due_date < today)
+    if q:
+        like = f"%{q}%"
+        query = query.join(Customer).filter(or_(Invoice.number.ilike(like), Customer.name.ilike(like)))
+    invoices = query.order_by(Invoice.due_date).all()
+    return templates.TemplateResponse(request, "dunning/list.html", {"invoices": invoices, "q": q})
 
 
 @router.post("/{invoice_id}/create")

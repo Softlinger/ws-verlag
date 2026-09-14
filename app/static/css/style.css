@@ -164,6 +164,24 @@ button.danger, .btn.danger { background: var(--color-danger); }
 .floating-home:hover, .floating-home:focus { opacity: 1; transform: translateY(-2px); text-decoration: none; }
 .floating-home .home-icon { font-size: 1.15rem; line-height: 1; }
 
+/* Suchleiste in Listen */
+.search-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 0 0 1.25rem; }
+.search-bar input[type="search"] { flex: 1 1 14rem; max-width: 24rem; width: auto; margin: 0; }
+
+/* Kundensuche / Filter ueber Auswahllisten in Belegformularen */
+.select-filter { margin-top: 0.25rem; }
+.select-filter-count { color: var(--color-muted); font-size: 0.85rem; margin-left: 0.5rem; }
+
+/* Visuell versteckt, aber fuer Screenreader vorhanden */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap; border: 0;
+}
+
 .status-badge { padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.85rem; }
 .status-offen { background: #fdecea; color: var(--color-danger); }
 .status-teilbezahlt { background: #fff4e0; color: #8a5a00; }

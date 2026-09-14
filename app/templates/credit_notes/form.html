@@ -6,6 +6,8 @@
   <form method="post" action="/credit-notes/new">
     {{ csrf_field(request) }}
     <label for="invoice_id">Rechnung</label>
+    <input class="select-filter" type="search" data-select-filter="#invoice_id"
+           placeholder="Rechnung/Kunde suchen&hellip;" aria-label="Rechnungsliste durchsuchen" autocomplete="off">
     <select id="invoice_id" name="invoice_id" required>
       {% for inv in invoices %}
       <option value="{{ inv.id }}" {{ "selected" if invoice and invoice.id == inv.id else "" }}>{{ inv.number }} - {{ inv.customer.name }}</option>
@@ -42,4 +44,5 @@
   </form>
 </div>
 {% include "partials/line_items_script.html" %}
+{% include "partials/select_filter_script.html" %}
 {% endblock %}

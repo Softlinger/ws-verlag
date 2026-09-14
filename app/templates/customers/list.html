@@ -2,6 +2,7 @@
 {% block title %}Kunden - WS-Verlag Verwaltung{% endblock %}
 {% block content %}
 <h1>Kunden</h1>
+{% include "partials/search.html" %}
 {% if request.query_params.get("error") == "customer_in_use" %}
 <p class="error-message" role="alert">Kunde kann nicht gel&ouml;scht werden, da bereits Auftr&auml;ge/Rechnungen vorhanden sind (Aufbewahrungspflicht). Bitte stattdessen im Bearbeiten-Formular deaktivieren.</p>
 {% endif %}

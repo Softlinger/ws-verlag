@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.auth import hash_password, require_admin
@@ -11,9 +12,13 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("")
-def list_users(request: Request, db: Session = Depends(get_db), user: User = Depends(require_admin)):
-    users = db.query(User).order_by(User.username).all()
-    return templates.TemplateResponse(request, "users/list.html", {"users": users})
+def list_users(request: Request, q: str = "", db: Session = Depends(get_db), user: User = Depends(require_admin)):
+    query = db.query(User)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(or_(User.username.ilike(like), User.full_name.ilike(like)))
+    users = query.order_by(User.username).all()
+    return templates.TemplateResponse(request, "users/list.html", {"users": users, "q": q})
 
 
 @router.get("/new")

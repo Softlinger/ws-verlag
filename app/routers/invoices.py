@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse, Response
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.auth import require_login
@@ -58,11 +59,15 @@ def _invoice_is_sent(db: Session, invoice_id: int) -> bool:
 
 
 @router.get("")
-def list_invoices(request: Request, db: Session = Depends(get_db), user: User = Depends(require_login)):
-    invoices = db.query(Invoice).order_by(Invoice.id.desc()).all()
+def list_invoices(request: Request, q: str = "", db: Session = Depends(get_db), user: User = Depends(require_login)):
+    query = db.query(Invoice)
+    if q:
+        like = f"%{q}%"
+        query = query.join(Customer).filter(or_(Invoice.number.ilike(like), Customer.name.ilike(like)))
+    invoices = query.order_by(Invoice.id.desc()).all()
     totals_by_id = {inv.id: _build_totals(inv) for inv in invoices}
     return templates.TemplateResponse(
-        request, "invoices/list.html", {"invoices": invoices, "totals_by_id": totals_by_id}
+        request, "invoices/list.html", {"invoices": invoices, "totals_by_id": totals_by_id, "q": q}
     )
 
 

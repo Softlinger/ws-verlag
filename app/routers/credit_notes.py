@@ -3,11 +3,12 @@ from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse, Response
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.auth import require_login
 from app.database import get_db
-from app.models import CreditNote, CreditNoteItem, DocumentType, Invoice, MailStatus, User
+from app.models import CreditNote, CreditNoteItem, Customer, DocumentType, Invoice, MailStatus, User
 from app.routers.company import get_or_create_company
 from app.services.mailer import send_document_mail
 from app.services.numbering import generate_next_number
@@ -33,9 +34,17 @@ def _note_totals(credit_note: CreditNote):
 
 
 @router.get("")
-def list_credit_notes(request: Request, db: Session = Depends(get_db), user: User = Depends(require_login)):
-    credit_notes = db.query(CreditNote).order_by(CreditNote.id.desc()).all()
-    return templates.TemplateResponse(request, "credit_notes/list.html", {"credit_notes": credit_notes})
+def list_credit_notes(request: Request, q: str = "", db: Session = Depends(get_db), user: User = Depends(require_login)):
+    query = db.query(CreditNote)
+    if q:
+        like = f"%{q}%"
+        query = (
+            query.join(Invoice, CreditNote.invoice_id == Invoice.id)
+            .join(Customer, Invoice.customer_id == Customer.id)
+            .filter(or_(CreditNote.number.ilike(like), Invoice.number.ilike(like), Customer.name.ilike(like)))
+        )
+    credit_notes = query.order_by(CreditNote.id.desc()).all()
+    return templates.TemplateResponse(request, "credit_notes/list.html", {"credit_notes": credit_notes, "q": q})
 
 
 @router.get("/new")

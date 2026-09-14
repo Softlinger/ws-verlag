@@ -2,6 +2,7 @@
 {% block title %}Benutzer - WS-Verlag Verwaltung{% endblock %}
 {% block content %}
 <h1>Benutzer</h1>
+{% include "partials/search.html" %}
 <p><a class="btn" href="/users/new">Neuer Benutzer</a></p>
 
 {% if request.query_params.get("error") == "password_too_short" %}

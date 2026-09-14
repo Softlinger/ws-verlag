@@ -1,8 +1,8 @@
 {
-  "version": "0.4.0",
+  "version": "0.4.1",
   "release_date": "2026-09-14",
-  "changelog": "- Kunden: 2. Namenszeile (Namenszusatz), erscheint auch auf Belegen",
+  "changelog": "- Adressblock bei allen Drucksorten (Rechnung/Auftrag/Gutschrift/Mahnung/Adressdruck) einheitlich 2,5cm vom linken Rand",
   "image": "ghcr.io/softlinger/ws-verlag",
-  "image_digest": "sha256:17a88ad946ab5888c61093905088fb83d66b9b55f970c3271b75db22c09ed94d",
-  "min_upgrade_from": "0.3.6"
+  "image_digest": "sha256:e5bf933a894fc60934337d578a2feef7946de34e9c645c69e9396cc40403135b",
+  "min_upgrade_from": "0.4.0"
 }

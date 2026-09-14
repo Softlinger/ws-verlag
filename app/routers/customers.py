@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse, Response
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.auth import require_login
@@ -13,9 +14,23 @@ router = APIRouter(prefix="/customers", tags=["customers"])
 
 
 @router.get("")
-def list_customers(request: Request, db: Session = Depends(get_db), user: User = Depends(require_login)):
-    customers = db.query(Customer).order_by(Customer.name).all()
-    return templates.TemplateResponse(request, "customers/list.html", {"customers": customers})
+def list_customers(request: Request, q: str = "", db: Session = Depends(get_db), user: User = Depends(require_login)):
+    query = db.query(Customer)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            or_(
+                Customer.name.ilike(like),
+                Customer.name2.ilike(like),
+                Customer.street.ilike(like),
+                Customer.city.ilike(like),
+                Customer.postal_code.ilike(like),
+                Customer.uid_number.ilike(like),
+                Customer.email.ilike(like),
+            )
+        )
+    customers = query.order_by(Customer.name).all()
+    return templates.TemplateResponse(request, "customers/list.html", {"customers": customers, "q": q})
 
 
 @router.get("/new")

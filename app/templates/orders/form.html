@@ -6,6 +6,8 @@
   <form method="post" action="{{ '/orders/' ~ order.id ~ '/edit' if order else '/orders/new' }}">
     {{ csrf_field(request) }}
     <label for="customer_id">Kunde</label>
+    <input class="select-filter" type="search" data-select-filter="#customer_id"
+           placeholder="Kunde suchen&hellip;" aria-label="Kundenliste durchsuchen" autocomplete="off">
     <select id="customer_id" name="customer_id" required>
       {% for customer in customers %}
       <option value="{{ customer.id }}" {{ "selected" if order and order.customer_id == customer.id else "" }}>{{ customer.name }}</option>
@@ -79,4 +81,5 @@
   </form>
 </div>
 {% include "partials/line_items_script.html" %}
+{% include "partials/select_filter_script.html" %}
 {% endblock %}

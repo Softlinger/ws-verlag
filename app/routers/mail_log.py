@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Request
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.auth import require_login
@@ -38,8 +39,12 @@ def _detail_url(db: Session, related_type: str, related_id: int) -> str | None:
 
 
 @router.get("")
-def list_mail_log(request: Request, db: Session = Depends(get_db), user: User = Depends(require_login)):
-    entries = db.query(MailLog).order_by(MailLog.sent_at.desc()).all()
+def list_mail_log(request: Request, q: str = "", db: Session = Depends(get_db), user: User = Depends(require_login)):
+    query = db.query(MailLog)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(or_(MailLog.recipient.ilike(like), MailLog.subject.ilike(like)))
+    entries = query.order_by(MailLog.sent_at.desc()).all()
     rows = []
     for entry in entries:
         rows.append(
@@ -52,4 +57,4 @@ def list_mail_log(request: Request, db: Session = Depends(get_db), user: User = 
                 else None,
             }
         )
-    return templates.TemplateResponse(request, "mail_log/list.html", {"rows": rows})
+    return templates.TemplateResponse(request, "mail_log/list.html", {"rows": rows, "q": q})

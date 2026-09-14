@@ -1,0 +1,38 @@
+<script>
+// Filtert ein <select> anhand eines zugeordneten Suchfelds:
+//   <input class="select-filter" data-select-filter="#customer_id" ...>
+// Baut die Optionen aus dem Originalbestand neu auf (browserzuverlaessiger als
+// option.hidden) und haelt die aktuell ausgewaehlte Option immer sichtbar,
+// damit die Auswahl nicht verloren geht.
+(function () {
+  document.querySelectorAll('input[data-select-filter]').forEach(function (input) {
+    var sel = document.querySelector(input.getAttribute('data-select-filter'));
+    if (!sel) return;
+    var original = Array.prototype.map.call(sel.options, function (o) {
+      return { value: o.value, label: o.textContent };
+    });
+    var initialSelected = sel.value;
+    function apply() {
+      var terms = input.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      var keep = original.filter(function (o) {
+        if (o.value === sel.value || o.value === initialSelected) return true;
+        if (!terms.length) return true;
+        var label = o.label.toLowerCase();
+        return terms.every(function (t) { return label.indexOf(t) !== -1; });
+      });
+      var current = sel.value;
+      sel.innerHTML = "";
+      keep.forEach(function (o) {
+        var opt = document.createElement("option");
+        opt.value = o.value;
+        opt.textContent = o.label;
+        if (o.value === current) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      var info = input.parentNode.querySelector(".select-filter-count");
+      if (info) info.textContent = keep.length + " von " + original.length;
+    }
+    input.addEventListener("input", apply);
+  });
+})();
+</script>

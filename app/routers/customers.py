@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.orm import Session
 
 from app.auth import require_login
 from app.database import get_db
-from app.models import BankAccount, Customer, PaymentTerm, User
+from app.models import BankAccount, Customer, Invoice, Order, PaymentTerm, User
+from app.routers.company import get_or_create_company
+from app.services.pdf import render_address_label_pdf
 from app.templating import templates
 
 router = APIRouter(prefix="/customers", tags=["customers"])
@@ -35,6 +37,7 @@ def create_customer(
     db: Session = Depends(get_db),
     user: User = Depends(require_login),
     name: str = Form(...),
+    name2: str = Form(""),
     street: str = Form(""),
     street2: str = Form(""),
     postal_code: str = Form(""),
@@ -50,6 +53,7 @@ def create_customer(
 ):
     customer = Customer(
         name=name,
+        name2=name2,
         street=street,
         street2=street2,
         postal_code=postal_code,
@@ -91,6 +95,7 @@ def update_customer(
     db: Session = Depends(get_db),
     user: User = Depends(require_login),
     name: str = Form(...),
+    name2: str = Form(""),
     street: str = Form(""),
     street2: str = Form(""),
     postal_code: str = Form(""),
@@ -107,6 +112,7 @@ def update_customer(
 ):
     customer = db.get(Customer, customer_id)
     customer.name = name
+    customer.name2 = name2
     customer.street = street
     customer.street2 = street2
     customer.postal_code = postal_code
@@ -122,3 +128,34 @@ def update_customer(
     customer.active = active
     db.commit()
     return RedirectResponse("/customers", status_code=303)
+
+
+@router.post("/{customer_id}/delete")
+def delete_customer(customer_id: int, db: Session = Depends(get_db), user: User = Depends(require_login)):
+    customer = db.get(Customer, customer_id)
+    if customer:
+        # Referenziert? Auftraege/Rechnungen unterliegen der Aufbewahrungspflicht (Buchhaltung)
+        # und duerfen nicht verwaist werden - dann nur Deaktivieren statt Loeschen anbieten.
+        in_use = (
+            db.query(Order).filter(Order.customer_id == customer_id).count()
+            + db.query(Invoice).filter(Invoice.customer_id == customer_id).count()
+        )
+        if in_use:
+            return RedirectResponse("/customers?error=customer_in_use", status_code=303)
+        db.delete(customer)
+        db.commit()
+    return RedirectResponse("/customers", status_code=303)
+
+
+@router.get("/{customer_id}/address-pdf")
+def download_address_label_pdf(
+    customer_id: int, db: Session = Depends(get_db), user: User = Depends(require_login)
+):
+    customer = db.get(Customer, customer_id)
+    company = get_or_create_company(db)
+    pdf_bytes = render_address_label_pdf(company=company, customer=customer)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="Adresse-{customer.id}.pdf"'},
+    )

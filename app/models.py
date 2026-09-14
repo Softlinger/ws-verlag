@@ -175,6 +175,7 @@ class Customer(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(255))
+    name2: Mapped[str] = mapped_column(String(255), default="")  # Namenszusatz, z. B. Filiale, Abteilung, z.Hd.
     street: Mapped[str] = mapped_column(String(255), default="")
     street2: Mapped[str] = mapped_column(String(255), default="")  # Adresszusatz, z. B. c/o, Postfach
     postal_code: Mapped[str] = mapped_column(String(20), default="")

@@ -4,10 +4,13 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
+from sqlalchemy.orm import Session
 
 from app.auth import require_admin, require_login
 from app.config import settings
+from app.database import get_db
 from app.models import User, UserRole
+from app.services.testdata import count_test_documents, purge_test_documents
 from app.templating import templates
 from app.times import utcnow
 
@@ -47,7 +50,7 @@ def _read_restore_status() -> dict | None:
 
 
 @router.get("")
-def help_page(request: Request, user: User = Depends(require_login)):
+def help_page(request: Request, db: Session = Depends(get_db), user: User = Depends(require_login)):
     context = {}
     if user.role == UserRole.ADMIN:
         context["backups"] = _list_backups()
@@ -55,6 +58,9 @@ def help_page(request: Request, user: User = Depends(require_login)):
         context["restore_requested"] = request.query_params.get("restore_requested") == "1"
         context["restore_error"] = request.query_params.get("restore_error") == "1"
         context["restore_status"] = _read_restore_status()
+        context["testdata_counts"] = count_test_documents(db)
+        context["purge_error"] = request.query_params.get("purge_error") == "1"
+        context["purge_done"] = request.query_params.get("purge_done") == "1"
     return templates.TemplateResponse(request, "help/page.html", context)
 
 
@@ -85,4 +91,20 @@ def trigger_restore(filename: str = Form(...), user: User = Depends(require_admi
     payload = {"filename": safe_name, "requested_at": utcnow().isoformat(), "requested_by": user.username}
     (signal_dir / "restore_request.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return RedirectResponse("/help?restore_requested=1#sicherung", status_code=303)
+
+
+@router.post("/testdata/purge")
+def purge_test_data(
+    confirm: bool = Form(False),
+    confirm_text: str = Form(""),
+    db: Session = Depends(get_db),
+    user: User = Depends(require_admin),
+):
+    """Loescht alle Testdaten (Auftraege/Rechnungen/Gutschriften) unwiderruflich - siehe
+    app/services/testdata.py. Doppelte Abfrage server-seitig erzwungen (Checkbox UND
+    eingetipptes Bestaetigungswort), damit ein versehentlicher Klick nichts ausloest."""
+    if not confirm or confirm_text.strip() != "LÖSCHEN":
+        return RedirectResponse("/help?purge_error=1#testdaten", status_code=303)
+    purge_test_documents(db)
+    return RedirectResponse("/help?purge_done=1#testdaten", status_code=303)
 

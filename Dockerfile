@@ -21,6 +21,12 @@ COPY scripts ./scripts
 # und hat insbesondere keinen Zugriff auf den Docker-Socket - nur der Updater-Container hat das.
 RUN useradd --create-home --shell /usr/sbin/nologin appuser
 
+# Logo-Upload (app/routers/company.py) schreibt hierher - COPY legt das Verzeichnis
+# (und ein evtl. bereits vorhandenes Logo darin) sonst als root:root an, das der
+# nicht-root appuser weder ueberschreiben noch neu anlegen kann. -R erfasst auch
+# eine schon von COPY mitgebrachte Datei, nicht nur das Verzeichnis selbst.
+RUN mkdir -p app/static/uploads && chown -R appuser:appuser app/static/uploads
+
 # Das Update-Signal-Volume muss der (nicht-root) App-Prozess beschreiben koennen
 # (update_request.json/backup_request.json). Ein frisches benanntes Volume erbt beim
 # ersten Mount den Besitz/Eigentum dieses Image-Verzeichnisses - deshalb hier als

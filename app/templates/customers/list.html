@@ -2,6 +2,9 @@
 {% block title %}Kunden - WS-Verlag Verwaltung{% endblock %}
 {% block content %}
 <h1>Kunden</h1>
+{% if request.query_params.get("error") == "customer_in_use" %}
+<p class="error-message" role="alert">Kunde kann nicht gel&ouml;scht werden, da bereits Auftr&auml;ge/Rechnungen vorhanden sind (Aufbewahrungspflicht). Bitte stattdessen im Bearbeiten-Formular deaktivieren.</p>
+{% endif %}
 <p><a class="btn" href="/customers/new">Neuer Kunde</a></p>
 <div class="card">
   <table>
@@ -12,12 +15,20 @@
     <tbody>
       {% for customer in customers %}
       <tr>
-        <td>{{ customer.name }}</td>
+        <td>{{ customer.name }}{% if customer.name2 %}<br>{{ customer.name2 }}{% endif %}</td>
         <td>{{ customer.postal_code }} {{ customer.city }}</td>
         <td>{{ customer.uid_number or "-" }}</td>
         <td>{{ "Ja" if customer.reverse_charge_applicable else "Nein" }}</td>
         <td>{{ "Ja" if customer.active else "Nein" }}</td>
-        <td><a href="/customers/{{ customer.id }}/edit">Bearbeiten</a></td>
+        <td>
+          <a href="/customers/{{ customer.id }}/edit">Bearbeiten</a>
+          <a href="/customers/{{ customer.id }}/address-pdf" target="_blank">Adresse drucken</a>
+          <form method="post" action="/customers/{{ customer.id }}/delete" style="display:inline"
+                onsubmit="return confirm('Kunde {{ customer.name }} wirklich l&ouml;schen?');">
+            {{ csrf_field(request) }}
+            <button type="submit" class="danger">L&ouml;schen</button>
+          </form>
+        </td>
       </tr>
       {% else %}
       <tr><td colspan="6">Noch keine Kunden angelegt.</td></tr>

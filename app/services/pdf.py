@@ -32,7 +32,7 @@ ITEMS_LINE_RIGHT_X = PRINT_RIGHT + 10  # Trennlinien der Positionstabelle: 1cm u
 
 LOGO_X, LOGO_Y_TOP, LOGO_W, LOGO_H = 110, 35, 90, 50
 
-ADDR_X, ADDR_Y_TOP, ADDR_SIZE = 23, 58, 14
+ADDR_X, ADDR_Y_TOP, ADDR_SIZE = 13, 58, 12
 ADDR_LEADING = 5.6
 
 DATE_X, DATE_Y_TOP, DATE_SIZE = 160, 128, 12
@@ -132,7 +132,10 @@ def _draw_logo(c: canvas.Canvas, company: Company) -> None:
 
 def _draw_customer_address(c: canvas.Canvas, customer) -> None:
     c.setFont("Helvetica-Bold", ADDR_SIZE)
-    lines = [customer.name, customer.street]
+    lines = [customer.name]
+    if getattr(customer, "name2", ""):
+        lines.append(customer.name2)
+    lines.append(customer.street)
     if getattr(customer, "street2", ""):
         lines.append(customer.street2)
     lines.append(f"{customer.postal_code} {customer.city}".strip())
@@ -301,6 +304,18 @@ def _draw_tax_block(
     c.drawRightString(ITEMS_PRICE_RIGHT_X * mm, y, f"€ {totals.gross_total:.2f}")
 
 
+def render_address_label_pdf(*, company: Company, customer) -> bytes:
+    """Adress-Ausdruck fuer den Paketversand: nur Firmenlogo + Anschrift, sonst leere
+    A4-Seite (kein Betreff/Positionen/Steuerblock wie bei den Belegen)."""
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    _draw_logo(c, company)
+    _draw_customer_address(c, customer)
+    c.showPage()
+    c.save()
+    return buffer.getvalue()
+
+
 def render_invoice_pdf(*, company: Company, invoice, customer, items, totals) -> bytes:
     return _render_beleg_pdf(
         company=company,
@@ -367,6 +382,8 @@ def render_dunning_pdf(*, company: Company, dunning, invoice, customer) -> bytes
     elements.append(Paragraph(f"Datum: {dunning.created_at.strftime('%d.%m.%Y')}", styles["Normal"]))
     elements.append(Spacer(1, 4 * mm))
     elements.append(Paragraph(f"<b>{customer.name}</b>", styles["Normal"]))
+    if getattr(customer, "name2", ""):
+        elements.append(Paragraph(customer.name2, styles["Normal"]))
     elements.append(Paragraph(f"{customer.street}, {customer.postal_code} {customer.city}", styles["Normal"]))
     elements.append(Spacer(1, 6 * mm))
     for paragraph in dunning.rendered_text.split("\n"):

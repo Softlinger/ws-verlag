@@ -38,6 +38,7 @@ _NEW_COLUMNS: list[tuple[str, str, str]] = [
     ("payment_terms", "printed_text", "VARCHAR(255) DEFAULT 'Zahlbar nach Erhalt, ohne Abzug.'"),
     ("company", "smtp_encryption", "VARCHAR(16) DEFAULT 'starttls'"),
     ("users", "password_version", "INTEGER NOT NULL DEFAULT 0"),
+    ("customers", "name2", "VARCHAR(255) DEFAULT ''"),
 ]
 
 

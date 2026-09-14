@@ -8,6 +8,9 @@
     <label for="name">Name / Firma</label>
     <input id="name" name="name" required value="{{ customer.name if customer else '' }}">
 
+    <label for="name2">Namenszusatz (z.&nbsp;B. Filiale, Abteilung, z.&nbsp;Hd.)</label>
+    <input id="name2" name="name2" value="{{ customer.name2 if customer else '' }}">
+
     <label for="street">Stra&szlig;e</label>
     <input id="street" name="street" value="{{ customer.street if customer else '' }}">
 
@@ -63,7 +66,11 @@
     </label>
     {% endif %}
 
-    <p><button type="submit" style="margin-top: 1rem;">Speichern</button> <a class="btn secondary" href="/customers">Abbrechen</a></p>
+    <p>
+      <button type="submit" style="margin-top: 1rem;">Speichern</button>
+      <a class="btn secondary" href="/customers">Abbrechen</a>
+      {% if customer %}<a class="btn secondary" href="/customers/{{ customer.id }}/address-pdf" target="_blank">Adresse drucken</a>{% endif %}
+    </p>
   </form>
 </div>
 {% endblock %}

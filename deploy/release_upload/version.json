@@ -1,8 +1,8 @@
 {
-  "version": "0.4.3",
+  "version": "0.4.4",
   "release_date": "2026-09-14",
-  "changelog": "- Update-UI heilt einen verwaisten 'Installation laeuft'-Status automatisch (fehlender Abschluss-Report oder zurueckgespielte DB)",
+  "changelog": "- Mehr Kontrast/Uebersicht: Zebra-Streifen in allen Listen",
   "image": "ghcr.io/softlinger/ws-verlag",
-  "image_digest": "sha256:5c325f8923dafb320cf380954aba7fdb6fad6a803e887dd2ab0932f4108044bf",
-  "min_upgrade_from": "0.4.2"
+  "image_digest": "sha256:0d348a19e16003af698407713c4685ab16aebbdad6637422358d034ad691620a",
+  "min_upgrade_from": "0.4.3"
 }

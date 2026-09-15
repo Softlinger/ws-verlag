@@ -1,0 +1,69 @@
+{#
+  Kleiner Textformatierungs-Toolbar fuer description-Felder (Artikel + Belegpositionen).
+  Fuellt KEIN Rich-Text-Feld - er wickelt die aktuelle Textauswahl nur in die
+  bestehenden Steuerzeichen (**fett**, _kursiv_, [size=N]...[/size]), die das PDF-
+  Rendering ohnehin versteht. Speicherformat und PDF bleiben unveraendert.
+  Einmal pro Formular einbinden; wirkt auf das zuletze fokussierte description-Feld.
+#}
+<div class="format-toolbar" role="group" aria-label="Textformatierung">
+  <span class="fmt-label">Formatierung:</span>
+  <button type="button" class="fmt-btn" data-wrap="**" title="Fett (**Text**)"><strong>F</strong></button>
+  <button type="button" class="fmt-btn" data-wrap="_" title="Kursiv (_Text_)"><em>K</em></button>
+  <label class="fmt-size">Schrift
+    <select class="fmt-size-select" title="Auswahl in [size=N]...[/size] setzen">
+      <option value="">Gr&ouml;&szlig;e&hellip;</option>
+      <option value="14">14</option>
+      <option value="16">16</option>
+      <option value="20">20</option>
+      <option value="24">24</option>
+      <option value="28">28</option>
+    </select>
+  </label>
+  <span class="fmt-hint">Text markieren, dann Button w&auml;hlen</span>
+</div>
+<script>
+(function () {
+  var SEL = 'textarea[name="description"], textarea#description';
+  var active = null;
+  function bind() {
+    document.querySelectorAll(SEL).forEach(function (ta) {
+      if (ta.dataset.fmtBound) return;
+      ta.dataset.fmtBound = "1";
+      ta.addEventListener("focus", function () { active = ta; });
+    });
+  }
+  function current() {
+    if (active && document.contains(active)) return active;
+    return document.querySelector(SEL);
+  }
+  function wrap(before, after) {
+    var ta = current();
+    if (!ta) return;
+    var s = ta.selectionStart, e = ta.selectionEnd;
+    var sel = ta.value.slice(s, e);
+    ta.value = ta.value.slice(0, s) + before + sel + after + ta.value.slice(e);
+    ta.focus();
+    ta.selectionStart = s + before.length;
+    ta.selectionEnd = s + before.length + sel.length;
+    active = ta;
+  }
+  bind();
+  document.querySelectorAll(".fmt-btn[data-wrap]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var m = b.getAttribute("data-wrap");
+      wrap(m, m);
+    });
+  });
+  var sizeSel = document.querySelector(".fmt-size-select");
+  if (sizeSel) sizeSel.addEventListener("change", function () {
+    var v = sizeSel.value;
+    if (!v) return;
+    wrap("[size=" + v + "]", "[/size]");
+    sizeSel.value = "";
+  });
+  // Neue Positionszeilen (dynamisch per line_items_script) nachbinden.
+  document.addEventListener("click", function (ev) {
+    if (ev.target && ev.target.id === "add-item-row") setTimeout(bind, 0);
+  });
+})();
+</script>

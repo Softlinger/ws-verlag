@@ -1,8 +1,8 @@
 {
-  "version": "0.4.5",
-  "release_date": "2026-09-14",
-  "changelog": "- style.css erhaelt Cache-Buster (?v=Version): nach einem Update laden Browser automatisch die frische CSS",
+  "version": "0.4.6",
+  "release_date": "2026-09-15",
+  "changelog": "- Einfacher Textformatierungs-Toolbar (Fett/Kursiv/Schriftgroesse) in Artikel- und Belegpositionen ersetzt muhsames Tippen der Steuerzeichen",
   "image": "ghcr.io/softlinger/ws-verlag",
-  "image_digest": "sha256:ebf3816b6bf8ea7a2814fadd3e64916de37ea3a3df2335c60a740c9dd9c29905",
-  "min_upgrade_from": "0.4.4"
+  "image_digest": "sha256:82048e0e4237398ae4d90eb6fe5a3c135d8b9567eb5baeba65bdc83ec9ff9483",
+  "min_upgrade_from": "0.4.5"
 }

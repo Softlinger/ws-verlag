@@ -1,8 +1,8 @@
 {
-  "version": "0.4.6",
-  "release_date": "2026-09-15",
-  "changelog": "- Einfacher Textformatierungs-Toolbar (Fett/Kursiv/Schriftgroesse) in Artikel- und Belegpositionen ersetzt muhsames Tippen der Steuerzeichen",
+  "version": "0.4.7",
+  "release_date": "2026-09-28",
+  "changelog": "Betraege mit Tausenderpunkt und Dezimalkomma (Belege, Mahnungen, Berichte); Vorschau in der Formatierungs-Toolbar",
   "image": "ghcr.io/softlinger/ws-verlag",
-  "image_digest": "sha256:82048e0e4237398ae4d90eb6fe5a3c135d8b9567eb5baeba65bdc83ec9ff9483",
-  "min_upgrade_from": "0.4.5"
+  "image_digest": "sha256:a8b5144976bb3b11b8033627b10d9309c6e183522b50a39022c6f333ef6f20dc",
+  "min_upgrade_from": "0.4.6"
 }

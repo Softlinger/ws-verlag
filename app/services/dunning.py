@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from sqlalchemy.orm import Session
 
+from app.formatting import format_amount
 from app.models import DunningLevelSetting, Invoice
 from app.times import today_vienna
 
@@ -20,9 +21,9 @@ def render_dunning_text(level_setting: DunningLevelSetting, invoice: Invoice, op
         kunde=invoice.customer.name,
         rechnungsnummer=invoice.number,
         rechnungsdatum=invoice.invoice_date.strftime("%d.%m.%Y"),
-        betrag=f"{open_amount:.2f}",
+        betrag=format_amount(open_amount),
         mahnstufe=str(level_setting.level),
-        gebuehr=f"{level_setting.fee_amount:.2f}",
+        gebuehr=format_amount(level_setting.fee_amount),
         faelligkeitsdatum=(today_vienna() + timedelta(days=level_setting.due_days)).strftime("%d.%m.%Y"),
     )
     # str.format_map mit _SafeDict statt .format(): unbekannte Schlussel -> leer.

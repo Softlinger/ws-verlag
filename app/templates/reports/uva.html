@@ -25,33 +25,33 @@
       {% for rate, net in summary.net_by_rate.items()|sort %}
       <tr>
         <td>{{ rate }}% USt.</td>
-        <td>{{ "%.2f"|format(net) }} EUR</td>
-        <td>{{ "%.2f"|format(summary.vat_by_rate.get(rate, 0)) }} EUR</td>
+        <td>{{ net|betrag }} EUR</td>
+        <td>{{ summary.vat_by_rate.get(rate, 0)|betrag }} EUR</td>
       </tr>
       {% endfor %}
       <tr>
         <td>Reverse-Charge (0% USt.)</td>
-        <td>{{ "%.2f"|format(summary.reverse_charge_net) }} EUR</td>
+        <td>{{ summary.reverse_charge_net|betrag }} EUR</td>
         <td>0,00 EUR</td>
       </tr>
       <tr>
         <td>davon Werbesteuer (in Netto-Basis enthalten)</td>
-        <td>{{ "%.2f"|format(summary.advertising_tax_amount) }} EUR</td>
+        <td>{{ summary.advertising_tax_amount|betrag }} EUR</td>
         <td>&mdash;</td>
       </tr>
       <tr>
         <th scope="row">Gesamt Netto</th>
-        <td>{{ "%.2f"|format(summary.net_total) }} EUR</td>
+        <td>{{ summary.net_total|betrag }} EUR</td>
         <td>&mdash;</td>
       </tr>
       <tr>
         <th scope="row">Gesamt USt.</th>
         <td>&mdash;</td>
-        <td>{{ "%.2f"|format(summary.vat_total) }} EUR</td>
+        <td>{{ summary.vat_total|betrag }} EUR</td>
       </tr>
       <tr>
         <th scope="row">Gesamt Brutto</th>
-        <td colspan="2">{{ "%.2f"|format(summary.gross_total) }} EUR</td>
+        <td colspan="2">{{ summary.gross_total|betrag }} EUR</td>
       </tr>
     </tbody>
   </table>

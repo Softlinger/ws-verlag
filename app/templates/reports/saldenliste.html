@@ -34,16 +34,16 @@
         <td>{{ zeile.number }}</td>
         <td>{{ zeile.beleg_date.strftime('%d.%m.%Y') }}</td>
         <td>{{ zeile.status or "" }}</td>
-        <td>{{ "%.2f"|format(zeile.gross_total) }} EUR</td>
-        <td>{{ "%.2f"|format(zeile.paid_total) }} EUR</td>
-        <td>{{ "%.2f"|format(zeile.open_amount) }} EUR</td>
+        <td>{{ zeile.gross_total|betrag }} EUR</td>
+        <td>{{ zeile.paid_total|betrag }} EUR</td>
+        <td>{{ zeile.open_amount|betrag }} EUR</td>
       </tr>
       {% endfor %}
       <tr>
         <th scope="row" colspan="4">Summe</th>
-        <td>{{ "%.2f"|format(kunde.summe_brutto) }} EUR</td>
-        <td>{{ "%.2f"|format(kunde.summe_bezahlt) }} EUR</td>
-        <td>{{ "%.2f"|format(kunde.summe_offen) }} EUR</td>
+        <td>{{ kunde.summe_brutto|betrag }} EUR</td>
+        <td>{{ kunde.summe_bezahlt|betrag }} EUR</td>
+        <td>{{ kunde.summe_offen|betrag }} EUR</td>
       </tr>
     </tbody>
   </table>
@@ -56,9 +56,9 @@
     <tbody>
       <tr>
         <th scope="row">Gesamt</th>
-        <td>{{ "%.2f"|format(saldenliste.gesamt_brutto) }} EUR</td>
-        <td>{{ "%.2f"|format(saldenliste.gesamt_bezahlt) }} EUR</td>
-        <td>{{ "%.2f"|format(saldenliste.gesamt_offen) }} EUR</td>
+        <td>{{ saldenliste.gesamt_brutto|betrag }} EUR</td>
+        <td>{{ saldenliste.gesamt_bezahlt|betrag }} EUR</td>
+        <td>{{ saldenliste.gesamt_offen|betrag }} EUR</td>
       </tr>
     </tbody>
   </table>

@@ -105,6 +105,6 @@ def test_render_dunning_text_ignores_unknown_placeholder():
 
     out = render_dunning_text(setting, invoice, Decimal("120.00"))
     assert "Hallo Kunde A" in out
-    assert "120.00" in out
+    assert "Betrag 120,00" in out
     # {xyz} laeuft ins Leere statt Exception.
     assert "Unbekanntes: " in out

@@ -1,10 +1,12 @@
 from fastapi.templating import Jinja2Templates
 from markupsafe import Markup
 
+from app.formatting import format_amount
 from app.csrf import COOKIE_NAME, create_token
 from app.version import __version__
 
 templates = Jinja2Templates(directory="app/templates")
+templates.env.filters["betrag"] = format_amount
 templates.env.globals["app_version"] = __version__
 templates.env.globals["csrf_cookie_name"] = COOKIE_NAME
 

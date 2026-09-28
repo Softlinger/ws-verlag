@@ -19,6 +19,7 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
+from app.formatting import format_amount
 from app.models import Company
 
 styles = getSampleStyleSheet()
@@ -107,6 +108,10 @@ def _safe_text(text: str) -> str:
     return text
 
 
+def _format_eur(amount) -> str:
+    return f"€ {format_amount(amount)}"
+
+
 def _y(top_mm: float) -> float:
     """Wandelt eine mm-Angabe vom oberen Blattrand in eine reportlab-Y-Koordinate
     (Ursprung unten links) um."""
@@ -172,7 +177,7 @@ def _draw_items(c: canvas.Canvas, items, *, reverse_charge: bool) -> float:
 
         c.setFont("Helvetica-Bold", ITEMS_SIZE)
         c.drawString(ITEMS_QTY_X * mm, y, f"{item.quantity:.0f}")
-        c.drawRightString(ITEMS_PRICE_RIGHT_X * mm, y, f"€ {item.unit_price:.2f}")
+        c.drawRightString(ITEMS_PRICE_RIGHT_X * mm, y, _format_eur(item.unit_price))
 
         paragraph = Paragraph(_format_item_description(item.description), ITEM_DESCRIPTION_STYLE)
         _, height = paragraph.wrap(ITEMS_DESC_MAX_WIDTH, PAGE_H)
@@ -282,14 +287,14 @@ def _draw_tax_block(
         if advertising_tax_applicable:
             y = _y(y_top)
             c.drawString(ITEMS_DESC_X * mm, y, f"+{advertising_tax_rate}% Werbesteuer")
-            c.drawRightString(ITEMS_PRICE_RIGHT_X * mm, y, f"€ {totals.advertising_tax_amount:.2f}")
+            c.drawRightString(ITEMS_PRICE_RIGHT_X * mm, y, _format_eur(totals.advertising_tax_amount))
             y_top += TAX_LEADING
 
         if not reverse_charge:
             for rate, amount in totals.vat_breakdown.items():
                 y = _y(y_top)
                 c.drawString(ITEMS_DESC_X * mm, y, f"+{rate}% MwSt.")
-                c.drawRightString(ITEMS_PRICE_RIGHT_X * mm, y, f"€ {amount:.2f}")
+                c.drawRightString(ITEMS_PRICE_RIGHT_X * mm, y, _format_eur(amount))
                 y_top += TAX_LEADING
     else:
         y_top += TAX_LEADING * 0.8
@@ -301,7 +306,7 @@ def _draw_tax_block(
     c.setFont("Helvetica-Bold", 16)
     y = _y(y_top)
     c.drawString(ITEMS_DESC_X * mm, y, "Gesamtbetrag")
-    c.drawRightString(ITEMS_PRICE_RIGHT_X * mm, y, f"€ {totals.gross_total:.2f}")
+    c.drawRightString(ITEMS_PRICE_RIGHT_X * mm, y, _format_eur(totals.gross_total))
 
 
 def render_address_label_pdf(*, company: Company, customer) -> bytes:
@@ -392,7 +397,7 @@ def render_dunning_pdf(*, company: Company, dunning, invoice, customer) -> bytes
         elements.append(Paragraph(paragraph or "&nbsp;", styles["Normal"]))
     if dunning.fee_amount:
         elements.append(Spacer(1, 6 * mm))
-        elements.append(Paragraph(f"Mahngebuehr: {dunning.fee_amount:.2f} EUR", styles["Normal"]))
+        elements.append(Paragraph(f"Mahngebuehr: {format_amount(dunning.fee_amount)} EUR", styles["Normal"]))
 
     doc.build(elements)
     return buffer.getvalue()
@@ -436,12 +441,12 @@ def render_balance_list_pdf(*, company: Company, saldenliste) -> bytes:
                     labels.get(zeile.kind, zeile.kind),
                     zeile.number,
                     zeile.beleg_date.strftime("%d.%m.%Y"),
-                    f"{zeile.gross_total:.2f}",
-                    f"{zeile.paid_total:.2f}",
-                    f"{zeile.open_amount:.2f}",
+                    format_amount(zeile.gross_total),
+                    format_amount(zeile.paid_total),
+                    format_amount(zeile.open_amount),
                 ]
             )
-        data.append(["Summe", "", "", f"{kunde.summe_brutto:.2f}", f"{kunde.summe_bezahlt:.2f}", f"{kunde.summe_offen:.2f}"])
+        data.append(["Summe", "", "", format_amount(kunde.summe_brutto), format_amount(kunde.summe_bezahlt), format_amount(kunde.summe_offen)])
         table = Table(data, colWidths=[28 * mm, 28 * mm, 24 * mm, 28 * mm, 28 * mm, 28 * mm])
         table.setStyle(_report_table_style(3))
         elements.append(table)
@@ -450,8 +455,8 @@ def render_balance_list_pdf(*, company: Company, saldenliste) -> bytes:
     elements.append(Spacer(1, 3 * mm))
     elements.append(
         Paragraph(
-            f"<b>Gesamt: {saldenliste.gesamt_brutto:.2f} EUR, bezahlt {saldenliste.gesamt_bezahlt:.2f} EUR, "
-            f"offen {saldenliste.gesamt_offen:.2f} EUR</b>",
+            f"<b>Gesamt: {format_amount(saldenliste.gesamt_brutto)} EUR, bezahlt {format_amount(saldenliste.gesamt_bezahlt)} EUR, "
+            f"offen {format_amount(saldenliste.gesamt_offen)} EUR</b>",
             styles["Normal"],
         )
     )
@@ -467,12 +472,12 @@ def render_vat_summary_pdf(*, company: Company, summary) -> bytes:
 
     data = [["Bezeichnung", "Netto", "USt.-Betrag"]]
     for rate in sorted(summary.net_by_rate):
-        data.append([f"{rate}% USt.", f"{summary.net_by_rate[rate]:.2f}", f"{summary.vat_by_rate.get(rate, Decimal('0.00')):.2f}"])
-    data.append(["Reverse-Charge (0% USt.)", f"{summary.reverse_charge_net:.2f}", "0.00"])
-    data.append(["davon Werbesteuer (in Netto-Basis enthalten)", f"{summary.advertising_tax_amount:.2f}", ""])
-    data.append(["Gesamt Netto", f"{summary.net_total:.2f}", ""])
-    data.append(["Gesamt USt.", "", f"{summary.vat_total:.2f}"])
-    data.append(["Gesamt Brutto", f"{summary.gross_total:.2f}", ""])
+        data.append([f"{rate}% USt.", format_amount(summary.net_by_rate[rate]), format_amount(summary.vat_by_rate.get(rate, Decimal("0.00")))])
+    data.append(["Reverse-Charge (0% USt.)", format_amount(summary.reverse_charge_net), "0,00"])
+    data.append(["davon Werbesteuer (in Netto-Basis enthalten)", format_amount(summary.advertising_tax_amount), ""])
+    data.append(["Gesamt Netto", format_amount(summary.net_total), ""])
+    data.append(["Gesamt USt.", "", format_amount(summary.vat_total)])
+    data.append(["Gesamt Brutto", format_amount(summary.gross_total), ""])
 
     table = Table(data, colWidths=[70 * mm, 40 * mm, 40 * mm])
     table.setStyle(_report_table_style(2))

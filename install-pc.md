@@ -428,9 +428,23 @@ PowerShell im Ordner `C:\ws-verlag` erneut `docker compose up -d` ausführen.
   Einstellung.
 
 **Admin-Passwort vergessen / verloren**
-- Neuen Admin-Benutzer nicht selbst in der Datenbank anlegen — stattdessen den
-  Software-Anbieter kontaktieren, oder falls ein zweiter Admin-Account existiert, über
-  diesen ein neues Passwort setzen (Benutzerverwaltung).
+- Falls ein zweiter Admin-Account existiert: damit anmelden und unter
+  **Benutzerverwaltung** ein neues Passwort setzen.
+- Sonst das Passwort direkt am Server-PC zurücksetzen (ab Version 0.4.8). In der
+  PowerShell im Ordner `C:\ws-verlag`:
+
+  ```powershell
+  docker compose exec app python scripts/reset_password.py admin
+  ```
+
+  (`admin` durch den betroffenen Benutzernamen ersetzen.) Das Skript fragt das neue
+  Passwort zweimal ab — die Eingabe bleibt beim Tippen **unsichtbar**, das ist
+  gewollt. Mindestens 8 Zeichen. Danach ist das Konto wieder aktiv und alle noch
+  angemeldeten Sitzungen dieses Benutzers sind abgemeldet.
+- Meldet die Anmeldeseite danach „Zu viele Fehlversuche“: einige Minuten warten, dann
+  erneut anmelden.
+- Neuen Admin-Benutzer **nicht** selbst in der Datenbank anlegen oder dort Werte
+  ändern.
 
 **Bei jedem anderen, hier nicht aufgeführten Problem:** Logs (*Docker Desktop →
 Containers → ws-verlag-app → Logs*) sichern/kopieren und dem Software-Anbieter mit

@@ -38,7 +38,7 @@ set "DIRTY="
 for /f "delims=" %%i in ('git status --porcelain') do set "DIRTY=1"
 if defined DIRTY (
   echo FEHLER: Arbeitsbaum nicht sauber bzw. unversionierte Dateien vorhanden.
-  echo         Bitte alles committen (auch diese .bat-Dateien), dann erneut starten.
+  echo         Bitte alles committen ^(auch diese .bat-Dateien^), dann erneut starten.
   git status --short
   exit /b 1
 )
@@ -48,7 +48,7 @@ echo.
 echo === Release %VER%: Bump + Build + ghcr-Push + version.json + FTPS-Upload ===
 poetry run python deploy/release.py %VER% --changelog "%CHG%"
 if errorlevel 1 (
-  echo FEHLER: release.py fehlgeschlagen (Build / ghcr-Push / FTP pruefen).
+  echo FEHLER: release.py fehlgeschlagen ^(Build / ghcr-Push / FTP pruefen^).
   exit /b 1
 )
 

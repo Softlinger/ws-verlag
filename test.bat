@@ -30,7 +30,7 @@ if "%RC%"=="0" (
   echo ALLE TESTS BESTANDEN.
 ) else (
   echo.
-  echo TESTS FEHLGESCHLAGEN (Exit %RC%).
+  echo TESTS FEHLGESCHLAGEN ^(Exit %RC%^).
 )
 
 :cleanup

@@ -3,6 +3,7 @@
   Fuellt KEIN Rich-Text-Feld - er wickelt die aktuelle Textauswahl nur in die
   bestehenden Steuerzeichen (**fett**, _kursiv_, [size=N]...[/size]), die das PDF-
   Rendering ohnehin versteht. Speicherformat und PDF bleiben unveraendert.
+  Zusaetzlich eine Vorschau, die das Markup des fokussierten Feldes live anzeigt.
   Einmal pro Formular einbinden; wirkt auf das zuletze fokussierte description-Feld.
 #}
 <div class="format-toolbar" role="group" aria-label="Textformatierung">
@@ -12,24 +13,30 @@
   <label class="fmt-size">Schrift
     <select class="fmt-size-select" title="Auswahl in [size=N]...[/size] setzen">
       <option value="">Gr&ouml;&szlig;e&hellip;</option>
+      <option value="10">10</option>
+      <option value="12">12</option>
       <option value="14">14</option>
       <option value="16">16</option>
+      <option value="18">18</option>
       <option value="20">20</option>
-      <option value="24">24</option>
-      <option value="28">28</option>
+      <option value="22">22</option>
     </select>
   </label>
+  <button type="button" class="fmt-btn fmt-preview-toggle" title="Vorschau ein-/ausblenden" aria-pressed="false">Vorschau</button>
   <span class="fmt-hint">Text markieren, dann Button w&auml;hlen</span>
 </div>
+<div class="fmt-preview" hidden></div>
 <script>
 (function () {
   var SEL = 'textarea[name="description"], textarea#description';
   var active = null;
+
   function bind() {
     document.querySelectorAll(SEL).forEach(function (ta) {
       if (ta.dataset.fmtBound) return;
       ta.dataset.fmtBound = "1";
-      ta.addEventListener("focus", function () { active = ta; });
+      ta.addEventListener("focus", function () { active = ta; updatePreview(); });
+      ta.addEventListener("input", updatePreview);
     });
   }
   function current() {
@@ -46,13 +53,31 @@
     ta.selectionStart = s + before.length;
     ta.selectionEnd = s + before.length + sel.length;
     active = ta;
+    updatePreview();
   }
+
+  // Steuerzeichen -> HTML fuer die Vorschau (HTML wird zuerst escaped -> kein XSS).
+  function renderMarkup(text) {
+    var esc = String(text)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return esc
+      .replace(/\[size=(\d+)\]([\s\S]*?)\[\/size\]/g, '<span style="font-size:$1px">$2</span>')
+      .replace(/\*\*([\s\S]*?)\*\*/g, "<strong>$1</strong>")
+      .replace(/_([\s\S]*?)_/g, "<em>$1</em>")
+      .replace(/\n/g, "<br>");
+  }
+  function updatePreview() {
+    var box = document.querySelector(".fmt-preview");
+    if (!box || box.hidden) return;
+    var ta = current();
+    if (!ta) { box.innerHTML = ""; return; }
+    var html = renderMarkup(ta.value);
+    box.innerHTML = html || '<span class="fmt-preview-empty">(leer)</span>';
+  }
+
   bind();
   document.querySelectorAll(".fmt-btn[data-wrap]").forEach(function (b) {
-    b.addEventListener("click", function () {
-      var m = b.getAttribute("data-wrap");
-      wrap(m, m);
-    });
+    b.addEventListener("click", function () { var m = b.getAttribute("data-wrap"); wrap(m, m); });
   });
   var sizeSel = document.querySelector(".fmt-size-select");
   if (sizeSel) sizeSel.addEventListener("change", function () {
@@ -61,9 +86,19 @@
     wrap("[size=" + v + "]", "[/size]");
     sizeSel.value = "";
   });
+  var previewBtn = document.querySelector(".fmt-preview-toggle");
+  var previewBox = document.querySelector(".fmt-preview");
+  if (previewBtn && previewBox) {
+    previewBtn.addEventListener("click", function () {
+      previewBox.hidden = !previewBox.hidden;
+      previewBtn.setAttribute("aria-pressed", previewBox.hidden ? "false" : "true");
+      previewBtn.classList.toggle("active", !previewBox.hidden);
+      updatePreview();
+    });
+  }
   // Neue Positionszeilen (dynamisch per line_items_script) nachbinden.
   document.addEventListener("click", function (ev) {
-    if (ev.target && ev.target.id === "add-item-row") setTimeout(bind, 0);
+    if (ev.target && ev.target.id === "add-item-row") setTimeout(function () { bind(); updatePreview(); }, 0);
   });
 })();
 </script>

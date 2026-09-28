@@ -213,6 +213,19 @@ a.btn[href*="/invoices/new"], a.btn[href*="/credit-notes/new"] { background: var
 .format-toolbar .fmt-size { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; }
 .format-toolbar .fmt-size-select { width: auto; margin: 0; padding: 0.2rem 0.4rem; font-size: 0.9rem; }
 .format-toolbar .fmt-hint { color: var(--color-muted); font-size: 0.8rem; margin-left: auto; }
+.format-toolbar .fmt-preview-toggle.active { background: var(--color-info); color: #fff; border-color: var(--color-info); }
+/* Vorschau-Panel fuer die formatierte Beschreibung */
+.fmt-preview {
+  margin: 0.25rem 0 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px dashed var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  min-height: 2.5rem;
+  line-height: 1.4;
+}
+.fmt-preview:empty { display: none; }
+.fmt-preview-empty { color: var(--color-muted); font-style: italic; }
 
 /* Schwebender "Start/Home"-Button auf langen Seiten (z. B. Firmenstammdaten),
    damit das Zurueckscrollen zur Navigation entfaellt. */
